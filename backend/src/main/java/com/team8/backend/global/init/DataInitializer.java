@@ -128,9 +128,9 @@ public class DataInitializer implements ApplicationRunner {
         auctionRepository.save(auction4);
 
         // ── BIDS ───────────────────────────────────────────────
-        bidRepository.save(new Bid(buyer1, auction1, 510000L,  LocalDateTime.of(2026, 4, 10, 11, 0)));
-        bidRepository.save(new Bid(buyer2, auction1, 600000L,  LocalDateTime.of(2026, 4, 10, 12, 0)));
-        bidRepository.save(new Bid(buyer1, auction1, 650000L,  LocalDateTime.of(2026, 4, 10, 13, 0)));
+        bidRepository.save(new Bid(buyer1, auction1, 510000L, LocalDateTime.of(2026, 4, 10, 11, 0)));
+        bidRepository.save(new Bid(buyer2, auction1, 600000L, LocalDateTime.of(2026, 4, 10, 12, 0)));
+        bidRepository.save(new Bid(buyer1, auction1, 650000L, LocalDateTime.of(2026, 4, 10, 13, 0)));
 
         bidRepository.save(new Bid(buyer1, auction2, 1100000L, LocalDateTime.of(2026, 3, 1, 11, 0)));
         bidRepository.save(new Bid(buyer2, auction2, 1200000L, LocalDateTime.of(2026, 3, 2, 12, 0)));
@@ -141,8 +141,7 @@ public class DataInitializer implements ApplicationRunner {
         Order order1 = new Order(
                 auction2, buyer2, seller1,
                 1300000L,
-                LocalDateTime.of(2026, 3, 6, 10, 0),
-                LocalDateTime.of(2026, 3, 5, 10, 0)
+                LocalDateTime.of(2026, 3, 6, 10, 0)
         );
         order1.pay(LocalDateTime.of(2026, 3, 5, 11, 0));
         order1.updateShippingAddress("대구 수성구");
@@ -154,8 +153,7 @@ public class DataInitializer implements ApplicationRunner {
         Order order2 = new Order(
                 auction1, buyer1, seller1,
                 650000L,
-                LocalDateTime.of(2026, 4, 21, 10, 0),
-                LocalDateTime.of(2026, 4, 20, 10, 0)
+                LocalDateTime.of(2026, 4, 21, 10, 0)
         );
         orderRepository.save(order2);
     }
