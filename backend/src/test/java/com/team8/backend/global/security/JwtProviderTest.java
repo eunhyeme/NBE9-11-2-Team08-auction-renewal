@@ -20,7 +20,7 @@ class JwtProviderTest {
     }
 
     private Authentication createAuthentication() {
-        CustomUserDetails userDetails = new CustomUserDetails(1L, "test@example.com", UserRole.ROLE_USER);
+        CustomUserDetails userDetails = new CustomUserDetails(1L, "test@example.com", UserRole.ROLE_USER, "test");
         return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
     }
 

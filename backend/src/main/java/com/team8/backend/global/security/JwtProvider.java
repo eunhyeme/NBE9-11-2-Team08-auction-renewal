@@ -34,6 +34,7 @@ public class JwtProvider {
                 .subject(String.valueOf(principal.getUserId()))
                 .claim("email", principal.getUsername())
                 .claim("role", principal.getAuthorities().iterator().next().getAuthority())
+                .claim("nickname", principal.getNickname())
                 .issuedAt(new Date(now))
                 .expiration(new Date(now + expireMillis))
                 .signWith(secretKey)
@@ -59,8 +60,9 @@ public class JwtProvider {
         Long userId = Long.parseLong(claims.getSubject());
         String email = claims.get("email", String.class);
         UserRole role = UserRole.valueOf(claims.get("role", String.class));
+        String nickname = claims.get("nickname", String.class);
 
-        CustomUserDetails userDetails = new CustomUserDetails(userId, email, role);
+        CustomUserDetails userDetails = new CustomUserDetails(userId, email, role, nickname);
         return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
     }
 }

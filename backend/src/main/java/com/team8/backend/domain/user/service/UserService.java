@@ -26,6 +26,7 @@ public class UserService {
     public User join(String email, String password, String nickname, String address) {
         userRepository.findByEmail(email)
                 .ifPresent(_ -> {
+                    // TODO: Exception 수정 필요
                     throw new RuntimeException("이미 사용 중인 이메일입니다.");
                 });
         User user = User.create(email, passwordEncoder.encode(password), nickname, address);
@@ -42,6 +43,8 @@ public class UserService {
     @Transactional(readOnly = true)
     public User getMe(CustomUserDetails userDetails) {
         return userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() ->
+                        // TODO: Exception 수정 필요
+                        new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
     }
 }

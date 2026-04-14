@@ -31,14 +31,14 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody @Valid LoginRequest request) {
+    public ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
         String token = userService.login(request.email(), request.password());
-        return ResponseEntity.ok(ApiResponse.success(new LoginResponse(token)));
+        return ApiResponse.success(new LoginResponse(token));
     }
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserResponse>> getMe(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        return ResponseEntity.ok(ApiResponse.success(UserResponse.from(userService.getMe(userDetails))));
+    public ApiResponse<UserResponse> getMe(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ApiResponse.success(UserResponse.from(userService.getMe(userDetails)));
     }
 }
