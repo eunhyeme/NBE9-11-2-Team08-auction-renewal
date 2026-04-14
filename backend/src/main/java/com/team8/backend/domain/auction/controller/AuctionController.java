@@ -4,6 +4,10 @@ import com.team8.backend.domain.auction.dto.request.AuctionCreateRequest;
 import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.service.AuctionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,10 +18,24 @@ public class AuctionController {
 
     private final AuctionService auctionService;
 
+    /**
+     * 경매 목록 조회 (비인증 허용)
+     * GET /api/auctions?page=0&size=10&sort=createdAt,desc
+     */
+    @GetMapping
+    public Page<AuctionResponse> getAuctions(
+            @PageableDefault(size = 10, sort = "startedAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return auctionService.getAuctions(pageable);
+    }
+
+    /**
+     * 경매 상품 등록
+     */
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED) // 성공 시 201 Created 반환
+    @ResponseStatus(HttpStatus.CREATED)
     public AuctionResponse createAuction(
-            @RequestHeader("X-USER-ID") Long userId, // 헤더로 유저 ID를 받는 임시 방식
+            @RequestHeader("X-USER-ID") Long userId,
             @RequestBody AuctionCreateRequest request
     ) {
         return auctionService.createAuction(userId, request);
