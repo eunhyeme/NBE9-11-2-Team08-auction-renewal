@@ -1,10 +1,21 @@
 package com.team8.backend.domain.user.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
+@Getter
+@EntityListeners(AuditingEntityListener.class)
 public class User {
 
     @Id
@@ -20,8 +31,12 @@ public class User {
     private UserRole role;
 
     @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
     private String nickname;
 
+    @CreatedDate
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -32,20 +47,20 @@ public class User {
 
     protected User() {}
 
-    public User(String email, UserRole role, String nickname, LocalDateTime createdAt, String address, Boolean hasBluecheck) {
+    private User(String email, String password, UserRole role, String nickname, String address, Boolean hasBluecheck) {
         this.email = email;
+        this.password = password;
         this.role = role;
         this.nickname = nickname;
-        this.createdAt = createdAt;
         this.address = address;
         this.hasBluecheck = hasBluecheck;
     }
 
-    public Long getUserId() { return userId; }
-    public String getEmail() { return email; }
-    public UserRole getRole() { return role; }
-    public String getNickname() { return nickname; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public String getAddress() { return address; }
-    public Boolean getHasBluecheck() { return hasBluecheck; }
+    public static User create(String email, String password, String nickname, String address) {
+        return new User(email, password, UserRole.ROLE_USER, nickname, address, false);
+    }
+
+    public static User createAdmin(String email, String password, String nickname, String address) {
+        return new User(email, password, UserRole.ROLE_ADMIN, nickname, address, true);
+    }
 }

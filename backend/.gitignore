@@ -38,3 +38,7 @@ out/
 
 # H2 Database
 *.db
+
+.claude
+
+.env

@@ -8,3 +8,7 @@ logging:
     org.hibernate.orm.jdbc.bind: trace
     org.hibernate.orm.jdbc.extract: trace
     org.springframework.transaction.interceptor: trace
+
+custom:
+  jwt:
+    secretPattern: ${JWT_SECRET:test-secret-key-that-is-at-least-32-characters-long-for-hs256}

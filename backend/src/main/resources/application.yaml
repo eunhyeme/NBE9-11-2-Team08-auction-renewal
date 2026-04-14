@@ -9,3 +9,7 @@ springdoc:
   api-docs:
     enabled: false
 
+custom:
+  jwt:
+    expireSeconds: 1800
+    secretPattern: ${JWT_SECRET}
