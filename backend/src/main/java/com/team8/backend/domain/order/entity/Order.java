@@ -85,4 +85,8 @@ public class Order {
     public void completeDelivery() { this.status = OrderStatus.DELIVERED; }
     public void markNotPaid() { this.status = OrderStatus.NOT_PAID; }
     public void markNotDelivered() { this.status = OrderStatus.NOT_DELIVERED; }
+
+    public void updateShippingAddress(String shippingAddress) {
+        this.shippingAddress = shippingAddress;
+    }
 }

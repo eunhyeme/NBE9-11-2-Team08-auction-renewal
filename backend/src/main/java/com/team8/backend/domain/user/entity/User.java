@@ -63,4 +63,8 @@ public class User {
     public static User createAdmin(String email, String password, String nickname, String address) {
         return new User(email, password, UserRole.ROLE_ADMIN, nickname, address, true);
     }
+
+    public void grantBluecheck() {
+        this.hasBluecheck = true;
+    }
 }
