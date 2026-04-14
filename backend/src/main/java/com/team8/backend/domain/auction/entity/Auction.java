@@ -66,6 +66,10 @@ public class Auction {
         this.currentPrice = bidPrice;
     }
 
+    public void extendEndTime(long minutes) {
+        this.endedAt = this.endedAt.plusMinutes(minutes);
+    }
+
     public void markWon() { this.status = AuctionStatus.WON; }
     public void markUnsold() { this.status = AuctionStatus.UNSOLD; }
     public void cancel() { this.status = AuctionStatus.CANCELED; }

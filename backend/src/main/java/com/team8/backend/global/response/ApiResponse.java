@@ -1,5 +1,7 @@
 package com.team8.backend.global.response;
 
+import com.team8.backend.global.exception.ErrorCode;
+
 public record ApiResponse<T>(
         String code,
         String message,
@@ -10,7 +12,11 @@ public record ApiResponse<T>(
         return new ApiResponse<>("200-1", "요청 성공", result);
     }
 
-    public static ApiResponse<Void> error(String code, String message) {
-        return new ApiResponse<>(code, message, null);
+    public static ApiResponse<Void> error(ErrorCode errorCode) {
+        return new ApiResponse<>(
+                errorCode.getCode(),
+                errorCode.getMessage(),
+                null
+        );
     }
 }
