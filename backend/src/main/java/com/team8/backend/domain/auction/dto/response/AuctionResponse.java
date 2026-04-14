@@ -5,34 +5,42 @@ import com.team8.backend.domain.auction.entity.AuctionStatus;
 
 import java.time.LocalDateTime;
 
+/**
+ * 8팀 경매 상품 응답 DTO
+ * ERD 규격 및 시니어 리뷰어 가이드라인(ID 노출, 낙관적 락 필드 포함) 준수
+ */
 public record AuctionResponse(
         Long auctionId,
-        String sellerNickname, // User 엔티티의 nickname 활용
+        Long sellerId,           // ERD: seller_id 반영
         String title,
+        String imageUrl,         // ERD: image_url 반영
         String description,
-        String imageUrl,
         Long startPrice,
         Long currentPrice,
-        String lastBidderNickname, // 입찰자가 없을 경우 null
+        Long lastBidderId,       // ERD: last_bidder_id 반영 (Nullable)
         Integer bidUnit,
         AuctionStatus status,
         LocalDateTime startedAt,
-        LocalDateTime endedAt
+        LocalDateTime endedAt,
+        Long version,            // ERD: version (낙관적 락 상태 확인용)
+        LocalDateTime deletedAt  // ERD: deleted_at (Soft Delete 확인용)
 ) {
     public static AuctionResponse from(Auction auction) {
         return new AuctionResponse(
                 auction.getAuctionId(),
-                auction.getSeller().getNickname(), // 판매자 닉네임
+                auction.getSeller() != null ? auction.getSeller().getUserId() : null,
                 auction.getTitle(),
-                auction.getDescription(),
                 auction.getImageUrl(),
+                auction.getDescription(),
                 auction.getStartPrice(),
                 auction.getCurrentPrice(),
-                auction.getLastBidder() != null ? auction.getLastBidder().getNickname() : null, // 입찰자 없으면 null 처리
+                auction.getLastBidder() != null ? auction.getLastBidder().getUserId() : null,
                 auction.getBidUnit(),
                 auction.getStatus(),
                 auction.getStartedAt(),
-                auction.getEndedAt()
+                auction.getEndedAt(),
+                auction.getVersion(),
+                auction.getDeletedAt()
         );
     }
 }

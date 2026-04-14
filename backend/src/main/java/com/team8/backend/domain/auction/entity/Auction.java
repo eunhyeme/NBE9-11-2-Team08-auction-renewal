@@ -2,10 +2,15 @@ package com.team8.backend.domain.auction.entity;
 
 import com.team8.backend.domain.user.entity.User;
 import jakarta.persistence.*;
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "auction")
+@Getter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class Auction {
 
     @Id
@@ -40,7 +45,7 @@ public class Auction {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AuctionStatus status;
+    private AuctionStatus status; // ONGOING, WON, UNSOLD, CANCELED
 
     @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;
@@ -55,37 +60,7 @@ public class Auction {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    protected Auction() {}
-
-    public Auction(User seller, String title, String imageUrl, String description,
-                   Long startPrice, Integer bidUnit, LocalDateTime startedAt, LocalDateTime endedAt) {
-        this.seller = seller;
-        this.title = title;
-        this.imageUrl = imageUrl;
-        this.description = description;
-        this.startPrice = startPrice;
-        this.currentPrice = startPrice;
-        this.bidUnit = bidUnit;
-        this.status = AuctionStatus.ONGOING;
-        this.startedAt = startedAt;
-        this.endedAt = endedAt;
-    }
-
-    public Long getAuctionId() { return auctionId; }
-    public User getSeller() { return seller; }
-    public String getTitle() { return title; }
-    public String getImageUrl() { return imageUrl; }
-    public String getDescription() { return description; }
-    public Long getStartPrice() { return startPrice; }
-    public Long getCurrentPrice() { return currentPrice; }
-    public User getLastBidder() { return lastBidder; }
-    public Integer getBidUnit() { return bidUnit; }
-    public AuctionStatus getStatus() { return status; }
-    public LocalDateTime getStartedAt() { return startedAt; }
-    public LocalDateTime getEndedAt() { return endedAt; }
-    public Long getVersion() { return version; }
-    public LocalDateTime getDeletedAt() { return deletedAt; }
-
+    // 비즈니스 로직
     public void placeBid(User bidder, Long bidPrice) {
         this.lastBidder = bidder;
         this.currentPrice = bidPrice;

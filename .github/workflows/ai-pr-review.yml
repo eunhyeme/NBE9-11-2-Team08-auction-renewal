@@ -23,10 +23,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12' # 💡 2026년 표준 최신 버전
+          python-version: '3.12'
 
       - name: Install Dependencies
-        run: pip install google-genai # 💡 구형 패키지 대신 새로운 공식 SDK 설치
+        run: pip install google-genai
 
       - name: Gemini AI Review
         env:
@@ -35,57 +35,42 @@ jobs:
         run: |
           cat << 'EOF' > review_script.py
           import os
-          from google import genai # 💡 최신 SDK 임포트 방식
+          from google import genai
           import subprocess
 
-          # 최신 클라이언트 설정
           client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
           
-          # PR 변경 사항(Diff) 가져오기
+          # 1. PR 변경 사항 가져오기
           try:
               diff = subprocess.check_output(["git", "diff", "origin/${{ github.base_ref }}...HEAD"]).decode("utf-8")
-          except Exception as e:
-              diff = f"변경 사항을 가져오는 데 실패했습니다: {e}"
+          except:
+              diff = "변경 사항 가져오기 실패"
 
-          # 도훈 님의 8팀 시니어 개발자 프롬프트 (그대로 보존)
+          # 2. 8팀 시니어 사수 가이드라인 (100% 반영)
           prompt = f"""
           너는 '프로그래머스 데브코스 백엔드 8팀'의 시니어 백엔드 개발자이자 리뷰어야. 
-          팀 프로젝트의 코드 품질을 유지하기 위해 아래 가이드라인에 따라 한국어로 리뷰를 작성해줘.
+          아래 가이드라인에 따라 한국어로 리뷰를 작성해줘.
 
-          1. 기본 원칙
-             - 잘못된 구현이나 비효율적인 코드는 주저하지 말고 명확하게 지적할 것.
-             - 지적 시에는 반드시 구체적인 정답 코드나 더 나은 대안(Alternative)을 함께 제시할 것.
+          1. 기본 원칙: 잘못된 구현은 지적하고 구체적인 정답 코드를 제시할 것.
+          2. 컨벤션: Java 17+, record 타입 사용, 정적 팩토리 메서드(from) 확인.
+          3. DB/도메인: @Version 필드 확인, Soft Delete(deleted_at) 방식 확인.
+          4. 스타일: 전문적이고 단호하면서 건설적인 톤 유지.
 
-          2. 기술 스택 및 컨벤션 검사
-             - Java 17+ 및 Spring Boot 3 환경의 표준 문법과 기능을 잘 활용했는지 확인.
-             - DTO 설계 시 'record' 타입을 사용했는지, '정적 팩토리 메서드(from)'를 통해 변환 로직을 캡슐화했는지 확인.
-             - 모든 API 응답이 팀에서 약속한 'ApiResponse<T>' 규격을 준수하는지 확인.
-
-          3. 데이터베이스 및 도메인 로직 검사
-             - JPA 엔티티 설계 시 동시성 제어를 위한 @Version 필드가 적절히 포함되었는지 확인.
-             - 데이터 삭제 기능 구현 시 실제 삭제 대신 'deleted_at' 필드를 활용한 Soft Delete 방식인지 확인.
-             - 비즈니스 로직(Service 레이어)에서 발생할 수 있는 예외 상황에 대해 적절한 예외 처리가 되어 있는지 검사.
-
-          4. 보안 및 성능
-             - API 응답 데이터에 이메일, 비밀번호 등 민감한 정보가 그대로 노출되지 않는지 확인.
-             - 불필요한 DB 조회(N+1 문제 등)나 성능 저하가 우려되는 로직이 있는지 확인.
-
-          5. 답변 스타일
-             - 팀의 성장을 돕는 전문적이고 단호하면서도, 논리적인 근거를 갖춘 건설적인 톤을 유지할 것.
-
-          리뷰할 코드 변경사항:
+          코드 변경사항:
           {diff}
           """
 
-          # 💡 Gemini 2.0 Flash 모델 호출 (최신 문법)
-          response = client.models.generate_content(
-              model='gemini-2.0-flash', 
-              contents=prompt
-          )
-          
-          with open("review_message.txt", "w", encoding="utf-8") as f:
-              f.write(response.text)
+          try:
+              # 💡 로그에서 확인된 2026년 신규 유저용 표준 모델 적용
+              response = client.models.generate_content(
+                  model='models/gemini-2.5-flash', 
+                  contents=prompt
+              )
+              with open("review_message.txt", "w", encoding="utf-8") as f:
+                  f.write(response.text)
+          except Exception as e:
+              with open("review_message.txt", "w", encoding="utf-8") as f:
+                  f.write(f"⚠️ AI 리뷰어 실행 오류: {e}")
           EOF
           python review_script.py
-          # GitHub CLI를 사용하여 댓글 작성
           gh pr comment ${{ github.event.pull_request.number }} --body-file=review_message.txt

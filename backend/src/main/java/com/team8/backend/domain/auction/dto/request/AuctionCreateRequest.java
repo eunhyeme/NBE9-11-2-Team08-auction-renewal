@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public record AuctionCreateRequest(
         String title,
+        String imageUrl,
         String description,
         Long startPrice,
         Integer bidUnit,
