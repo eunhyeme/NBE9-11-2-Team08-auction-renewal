@@ -13,3 +13,5 @@ custom:
   jwt:
     expireSeconds: 1800
     secretPattern: ${JWT_SECRET}
+  cookie:
+    secure: true

@@ -58,6 +58,37 @@ class JwtProviderTest {
     }
 
     @Test
+    @DisplayName("리프레시 토큰 생성 성공")
+    void generateRefreshToken_success() {
+        String token = jwtProvider.generateRefreshToken(createAuthentication());
+
+        assertThat(token).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("리프레시 토큰은 만료되지 않음")
+    void generateRefreshToken_doesNotExpire() throws InterruptedException {
+        JwtProvider shortLivedProvider = new JwtProvider(SECRET, 1);
+        String refreshToken = shortLivedProvider.generateRefreshToken(createAuthentication());
+
+        Thread.sleep(1100);
+
+        assertThat(shortLivedProvider.validateToken(refreshToken)).isTrue();
+    }
+
+    @Test
+    @DisplayName("리프레시 토큰에서 인증 정보 추출")
+    void getAuthentication_fromRefreshToken() {
+        String refreshToken = jwtProvider.generateRefreshToken(createAuthentication());
+
+        Authentication authentication = jwtProvider.getAuthentication(refreshToken);
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+        assertThat(userDetails.getUsername()).isEqualTo("test@example.com");
+        assertThat(userDetails.getUserId()).isEqualTo(1L);
+    }
+
+    @Test
     @DisplayName("토큰에서 인증 정보 추출")
     void getAuthentication_success() {
         String token = jwtProvider.generateToken(createAuthentication());

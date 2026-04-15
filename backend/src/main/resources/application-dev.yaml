@@ -30,3 +30,7 @@ logging:
     org.hibernate.orm.jdbc.bind: trace
     org.hibernate.orm.jdbc.extract: trace
     org.springframework.transaction.interceptor: trace
+
+custom:
+  cookie:
+    secure: false

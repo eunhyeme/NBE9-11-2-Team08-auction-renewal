@@ -1,6 +1,7 @@
 package com.team8.backend.domain.user.service;
 
 import com.team8.backend.domain.user.dto.request.UserMeUpdateRequest;
+import com.team8.backend.domain.user.dto.response.TokenPair;
 import com.team8.backend.domain.user.dto.response.UserMeResponse;
 import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.domain.user.repository.UserRepository;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,17 +30,33 @@ public class UserService {
     @Transactional
     public User join(String email, String password, String nickname, String address) {
         userRepository.findByEmail(email)
-                .ifPresent(ignored -> {
+                .ifPresent(_ -> {
                     throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
                 });
         User user = User.create(email, passwordEncoder.encode(password), nickname, address);
         return userRepository.save(user);
     }
 
-    public String login(String email, String password) {
+    @Transactional(readOnly = true)
+    public TokenPair login(String email, String password) {
         UsernamePasswordAuthenticationToken authToken =
                 new UsernamePasswordAuthenticationToken(email, password);
-        Authentication authentication = authenticationManager.authenticate(authToken);
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(authToken);
+        } catch (AuthenticationException e) {
+            throw new CustomException(ErrorCode.INVALID_CREDENTIAL);
+        }
+        String accessToken = jwtProvider.generateToken(authentication);
+        String refreshToken = jwtProvider.generateRefreshToken(authentication);
+        return new TokenPair(accessToken, refreshToken);
+    }
+
+    public String refresh(String refreshToken) {
+        if (!jwtProvider.validateToken(refreshToken)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+        Authentication authentication = jwtProvider.getAuthentication(refreshToken);
         return jwtProvider.generateToken(authentication);
     }
 

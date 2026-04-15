@@ -3,6 +3,7 @@ package com.team8.backend.domain.user.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team8.backend.domain.user.dto.request.LoginRequest;
 import com.team8.backend.domain.user.dto.request.SignupRequest;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,8 +20,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -60,6 +60,16 @@ class UserControllerTest {
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("result").get("accessToken").asText();
     }
 
+    private Cookie loginAndGetRefreshTokenCookie(String email, String password) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/users/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new LoginRequest(email, password))))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        return result.getResponse().getCookie("refreshToken");
+    }
+
     @Test
     @DisplayName("회원가입 성공")
     void signup_success() throws Exception {
@@ -95,11 +105,11 @@ class UserControllerTest {
         mockMvc.perform(post("/api/users/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new SignupRequest(EMAIL, PASSWORD, "다른닉네임", null))))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().is4xxClientError());
     }
 
     @Test
-    @DisplayName("로그인 성공 시 JWT 토큰 반환")
+    @DisplayName("로그인 성공 시 AccessToken 반환 및 RefreshToken 쿠키 설정")
     void login_success() throws Exception {
         signup(EMAIL, PASSWORD, NICKNAME);
 
@@ -107,7 +117,10 @@ class UserControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new LoginRequest(EMAIL, PASSWORD))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.accessToken").isNotEmpty());
+                .andExpect(jsonPath("$.result.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.result.refreshToken").doesNotExist())
+                .andExpect(cookie().exists("refreshToken"))
+                .andExpect(cookie().httpOnly("refreshToken", true));
     }
 
     @Test
@@ -118,6 +131,44 @@ class UserControllerTest {
         mockMvc.perform(post("/api/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new LoginRequest(EMAIL, "wrongPassword"))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("RefreshToken 쿠키로 새 AccessToken 발급")
+    void refresh_success() throws Exception {
+        signup(EMAIL, PASSWORD, NICKNAME);
+        Cookie refreshTokenCookie = loginAndGetRefreshTokenCookie(EMAIL, PASSWORD);
+
+        mockMvc.perform(post("/api/users/refresh")
+                .cookie(refreshTokenCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.accessToken").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("RefreshToken 쿠키 없이 재발급 시 400")
+    void refresh_noCookie_fail() throws Exception {
+        mockMvc.perform(post("/api/users/refresh"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공 시 RefreshToken 쿠키 삭제")
+    void logout_success() throws Exception {
+        signup(EMAIL, PASSWORD, NICKNAME);
+        String token = login(EMAIL, PASSWORD);
+
+        mockMvc.perform(post("/api/users/logout")
+                .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(cookie().maxAge("refreshToken", 0));
+    }
+
+    @Test
+    @DisplayName("토큰 없이 로그아웃 시 401")
+    void logout_noToken_unauthorized() throws Exception {
+        mockMvc.perform(post("/api/users/logout"))
                 .andExpect(status().isUnauthorized());
     }
 

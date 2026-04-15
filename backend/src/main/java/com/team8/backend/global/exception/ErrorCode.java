@@ -24,7 +24,7 @@ public enum ErrorCode {
     // USER
     DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "400-5", "이미 사용 중인 이메일입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "404-2", "사용자를 찾을 수 없습니다."),
-    INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "401-2", "비밀번호가 올바르지 않습니다."),
+    INVALID_CREDENTIAL(HttpStatus.UNAUTHORIZED, "401-2", "이메일 또는 비밀번호를 확인해주세요."),
 
     // ORDER
     INVALID_ORDER_STATE(HttpStatus.BAD_REQUEST, "400-6", "주문 상태가 올바르지 않습니다."),

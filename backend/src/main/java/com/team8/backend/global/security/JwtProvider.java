@@ -41,6 +41,19 @@ public class JwtProvider {
                 .compact();
     }
 
+    public String generateRefreshToken(Authentication authentication) {
+        CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+        long now = System.currentTimeMillis();
+        return Jwts.builder()
+                .subject(String.valueOf(principal.getUserId()))
+                .claim("email", principal.getUsername())
+                .claim("role", principal.getAuthorities().iterator().next().getAuthority())
+                .claim("nickname", principal.getNickname())
+                .issuedAt(new Date(now))
+                .signWith(secretKey)
+                .compact();
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
