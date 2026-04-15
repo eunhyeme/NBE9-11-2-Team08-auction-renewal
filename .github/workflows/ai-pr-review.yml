@@ -40,30 +40,41 @@ jobs:
 
           client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
           
-          # 1. PR 변경 사항 가져오기
+          # 1. 변경된 파일 목록 및 전체 내용 가져오기 (맥락 파악용) ⚾️
           try:
+              changed_files = subprocess.check_output(["git", "diff", "--name-only", "origin/${{ github.base_ref }}...HEAD"]).decode("utf-8").splitlines()
+              full_context = ""
+              for file in changed_files:
+                  if os.path.exists(file) and file.endswith(('.java', '.ts', '.tsx', '.yaml', '.yml')):
+                      with open(file, 'r', encoding='utf-8') as f:
+                          full_context += f"\n--- Full File Content: {file} ---\n{f.read()}\n"
+              
               diff = subprocess.check_output(["git", "diff", "origin/${{ github.base_ref }}...HEAD"]).decode("utf-8")
           except:
-              diff = "변경 사항 가져오기 실패"
+              diff = "데이터 가져오기 실패"
+              full_context = ""
 
-          # 2. 8팀 시니어 사수 가이드라인 (100% 반영)
+          # 2. 시니어 개발자 페르소나 적용 📈
           prompt = f"""
-          너는 '프로그래머스 데브코스 백엔드 8팀'의 시니어 백엔드 개발자이자 리뷰어야. 
-          아래 가이드라인에 따라 한국어로 리뷰를 작성해줘.
+          너는 숙련된 시니어 백엔드 개발자야. 이 PR의 변경사항을 리뷰해줘.
 
-          1. 기본 원칙: 잘못된 구현은 지적하고 구체적인 정답 코드를 제시할 것.
-          2. 컨벤션: Java 17+, record 타입 사용, 정적 팩토리 메서드(from) 확인.
-          3. DB/도메인: @Version 필드 확인, Soft Delete(deleted_at) 방식 확인.
-          4. 스타일: 전문적이고 단호하면서 건설적인 톤 유지.
+          [리뷰 가이드라인]
+          1. 실질적 로직 집중: Java 버전, record 사용 여부 등 이미 적용된 기초 규칙에 대한 중복 조언은 절대 하지 마. 
+          2. 전체 맥락 파악: 제공된 'Full File Content'를 먼저 읽고, 파일의 전체 구조 안에서 변경사항(Diff)이 적절한지 판단해.
+          3. 비즈니스 로직 및 보안: 예외 처리 누락, 성능 저하 가능성, 보안 취약점을 중점적으로 지적해줘.
+          4. 건설적인 피드백: 지적 사항에는 반드시 구체적인 이유와 시니어다운 개선 코드 예시를 포함해줘.
 
-          코드 변경사항:
+          분석 데이터:
+          [수정된 파일의 전체 코드]
+          {full_context}
+
+          [변경 사항 (Diff)]
           {diff}
           """
 
           try:
-              # 💡 로그에서 확인된 2026년 신규 유저용 표준 모델 적용
               response = client.models.generate_content(
-                  model='models/gemini-2.5-flash', 
+                  model='models/gemini-2.0-flash', 
                   contents=prompt
               )
               with open("review_message.txt", "w", encoding="utf-8") as f:
