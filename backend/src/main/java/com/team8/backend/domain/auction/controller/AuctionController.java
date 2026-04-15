@@ -3,12 +3,16 @@ package com.team8.backend.domain.auction.controller;
 import com.team8.backend.domain.auction.dto.request.AuctionCreateRequest;
 import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.service.AuctionService;
+import com.team8.backend.global.response.ApiResponse;
+import com.team8.backend.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,21 +27,21 @@ public class AuctionController {
      * GET /api/auctions?page=0&size=10&sort=createdAt,desc
      */
     @GetMapping
-    public Page<AuctionResponse> getAuctions(
+    public ResponseEntity<ApiResponse<Page<AuctionResponse>>> getAuctions(
             @PageableDefault(size = 10, sort = "startedAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return auctionService.getAuctions(pageable);
+        return ResponseEntity.ok(ApiResponse.success(auctionService.getAuctions(pageable)));
     }
 
     /**
      * 경매 상품 등록
      */
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public AuctionResponse createAuction(
-            @RequestHeader("X-USER-ID") Long userId,
+    public ResponseEntity<ApiResponse<AuctionResponse>> createAuction(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody AuctionCreateRequest request
     ) {
-        return auctionService.createAuction(userId, request);
+        AuctionResponse response = auctionService.createAuction(userDetails.getUserId(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 }

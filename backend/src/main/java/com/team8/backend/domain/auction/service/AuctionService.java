@@ -7,6 +7,8 @@ import com.team8.backend.domain.auction.entity.AuctionStatus;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
 import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.domain.user.repository.UserRepository;
+import com.team8.backend.global.exception.CustomException;
+import com.team8.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,7 +45,7 @@ public class AuctionService {
     public AuctionResponse createAuction(Long userId, AuctionCreateRequest request) {
         // (기존 createAuction 로직 동일...)
         User seller = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         LocalDateTime start = request.startedAt().truncatedTo(ChronoUnit.SECONDS);
         LocalDateTime end = request.endedAt().truncatedTo(ChronoUnit.SECONDS);
@@ -68,11 +70,10 @@ public class AuctionService {
     }
 
     private void validateAuctionTime(LocalDateTime start, LocalDateTime end) {
-        // (기존 validateAuctionTime 로직 동일...)
         LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
 
         if (start.isBefore(now)) {
-            throw new IllegalArgumentException("경매 시작 시간은 현재 시간보다 과거일 수 없습니다.");
+            throw new CustomException(ErrorCode.INVALID_AUCTION_TIME);
         }
 
         long secondsBetween = ChronoUnit.SECONDS.between(start, end);
@@ -81,7 +82,7 @@ public class AuctionService {
         if (secondsBetween < oneDayInSeconds ||
                 secondsBetween > (oneDayInSeconds * 10) ||
                 secondsBetween % oneDayInSeconds != 0) {
-            throw new IllegalArgumentException("경매 기간은 최소 1일에서 최대 10일 사이의 1일 단위여야 합니다.");
+            throw new CustomException(ErrorCode.INVALID_AUCTION_TIME);
         }
     }
 }
