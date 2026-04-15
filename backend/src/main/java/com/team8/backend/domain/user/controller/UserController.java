@@ -2,14 +2,14 @@ package com.team8.backend.domain.user.controller;
 
 import com.team8.backend.domain.user.dto.request.LoginRequest;
 import com.team8.backend.domain.user.dto.request.SignupRequest;
+import com.team8.backend.domain.user.dto.request.UserMeUpdateRequest;
 import com.team8.backend.domain.user.dto.response.LoginResponse;
-import com.team8.backend.domain.user.dto.response.UserResponse;
+import com.team8.backend.domain.user.dto.response.UserMeResponse;
 import com.team8.backend.domain.user.service.UserService;
 import com.team8.backend.global.response.ApiResponse;
 import com.team8.backend.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -38,7 +38,16 @@ public class UserController {
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/me")
-    public ApiResponse<UserResponse> getMe(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        return ApiResponse.success(UserResponse.from(userService.getMe(userDetails)));
+    public ApiResponse<UserMeResponse> getMe(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ApiResponse.success(UserMeResponse.from(userService.getMe(userDetails)));
+    }
+
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
+    @PutMapping("/me")
+    public ApiResponse<UserMeResponse> updateMyInfo(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody UserMeUpdateRequest request
+    ) {
+        return ApiResponse.success(userService.updateMyInfo(userDetails, request));
     }
 }

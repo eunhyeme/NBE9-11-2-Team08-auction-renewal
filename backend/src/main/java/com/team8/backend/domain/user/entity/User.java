@@ -4,13 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -62,6 +57,11 @@ public class User {
 
     public static User createAdmin(String email, String password, String nickname, String address) {
         return new User(email, password, UserRole.ROLE_ADMIN, nickname, address, true);
+    }
+
+    public void updateProfile(String nickname, String address) {
+        this.nickname = nickname;
+        this.address = address;
     }
 
     public void grantBluecheck() {

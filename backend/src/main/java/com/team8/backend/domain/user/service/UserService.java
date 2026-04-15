@@ -1,14 +1,17 @@
 package com.team8.backend.domain.user.service;
 
+import com.team8.backend.domain.user.dto.request.UserMeUpdateRequest;
+import com.team8.backend.domain.user.dto.response.UserMeResponse;
 import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.domain.user.repository.UserRepository;
+import com.team8.backend.global.exception.CustomException;
+import com.team8.backend.global.exception.ErrorCode;
 import com.team8.backend.global.security.CustomUserDetails;
 import com.team8.backend.global.security.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +28,8 @@ public class UserService {
     @Transactional
     public User join(String email, String password, String nickname, String address) {
         userRepository.findByEmail(email)
-                .ifPresent(_ -> {
-                    // TODO: Exception 수정 필요
-                    throw new RuntimeException("이미 사용 중인 이메일입니다.");
+                .ifPresent(ignored -> {
+                    throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
                 });
         User user = User.create(email, passwordEncoder.encode(password), nickname, address);
         return userRepository.save(user);
@@ -43,8 +45,16 @@ public class UserService {
     @Transactional(readOnly = true)
     public User getMe(CustomUserDetails userDetails) {
         return userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() ->
-                        // TODO: Exception 수정 필요
-                        new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    @Transactional
+    public UserMeResponse updateMyInfo(CustomUserDetails userDetails, UserMeUpdateRequest request) {
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        user.updateProfile(request.nickname(), request.address());
+
+        return UserMeResponse.from(user);
     }
 }
