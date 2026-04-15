@@ -96,4 +96,27 @@ public class AuctionService {
             throw new CustomException(ErrorCode.INVALID_AUCTION_TIME);
         }
     }
+
+    /**
+     * 경매 철회 (Soft Delete)
+     */
+    @Transactional // 💡 데이터 상태를 변경하므로 ReadOnly 해제
+    public void withdrawAuction(Long userId, Long auctionId) {
+        // 1. 존재하는(삭제되지 않은) 경매인지 DB에서 바로 확인
+        Auction auction = auctionRepository.findByAuctionIdAndDeletedAtIsNull(auctionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
+
+        // 2. 작성자 본인 확인
+        if (!auction.getSeller().getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // 3. 입찰 존재 여부 확인 (신뢰를 위해 입찰자가 생기면 철회 불가)
+        if (auction.getLastBidder() != null) {
+            throw new CustomException(ErrorCode.AUCTION_HAS_BID);
+        }
+
+        // 4. 엔티티 내부 로직을 통해 철회 처리 (deletedAt 기록)
+        auction.withdraw();
+    }
 }

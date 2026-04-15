@@ -66,6 +66,11 @@ public class Auction {
         this.currentPrice = bidPrice;
     }
 
+    public void withdraw() {
+        this.deletedAt = LocalDateTime.now();
+        this.status = AuctionStatus.CANCELED;
+    }
+
     public void extendEndTime(long minutes) {
         this.endedAt = this.endedAt.plusMinutes(minutes);
     }

@@ -53,4 +53,17 @@ public class AuctionController {
         AuctionResponse response = auctionService.createAuction(userDetails.getUserId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
+
+    /**
+     * 경매 철회 (Soft Delete)
+     * DELETE /api/auctions/{auctionId}
+     */
+    @DeleteMapping("/{auctionId}")
+    public ResponseEntity<ApiResponse<Void>> withdrawAuction(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long auctionId
+    ) {
+        auctionService.withdrawAuction(userDetails.getUserId(), auctionId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
 }
