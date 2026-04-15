@@ -39,6 +39,17 @@ public class AuctionService {
     }
 
     /**
+     * 경매 단건 조회 로직
+     */
+    public AuctionResponse getAuction(Long auctionId) {
+        // Repository에서 DB 필터링이 완료된 메서드를 호출
+        Auction auction = auctionRepository.findByAuctionIdAndDeletedAtIsNull(auctionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
+
+        return AuctionResponse.from(auction);
+    }
+
+    /**
      * 경매 상품 등록
      */
     @Transactional // 쓰기 작업이므로 ReadOnly 해제

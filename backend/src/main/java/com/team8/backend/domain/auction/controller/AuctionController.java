@@ -34,6 +34,15 @@ public class AuctionController {
     }
 
     /**
+     * 경매 상세 조회 (비인증 허용)
+     * GET /api/auctions/{auctionId}
+     */
+    @GetMapping("/{auctionId}")
+    public ResponseEntity<ApiResponse<AuctionResponse>> getAuction(@PathVariable Long auctionId) {
+        return ResponseEntity.ok(ApiResponse.success(auctionService.getAuction(auctionId)));
+    }
+
+    /**
      * 경매 상품 등록
      */
     @PostMapping
