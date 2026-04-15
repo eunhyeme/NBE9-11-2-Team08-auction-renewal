@@ -74,7 +74,7 @@ jobs:
 
           try:
               response = client.models.generate_content(
-                  model='models/gemini-2.0-flash', 
+                  model='models/gemini-2.5-flash-lite', 
                   contents=prompt
               )
               with open("review_message.txt", "w", encoding="utf-8") as f:
