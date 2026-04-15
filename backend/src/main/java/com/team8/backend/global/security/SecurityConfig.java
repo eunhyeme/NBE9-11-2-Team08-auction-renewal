@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/favicon.ico").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/signup", "/api/users/login", "/api/users/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auctions/**").permitAll() // 경매 목록과 상세 조회는 인증 없이 허용
                         .requestMatchers("/admin/**").hasRole("ADMIN")

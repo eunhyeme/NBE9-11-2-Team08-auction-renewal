@@ -5,12 +5,17 @@ import com.team8.backend.domain.auction.repository.AuctionRepository;
 import com.team8.backend.domain.bid.dto.BidRequest;
 import com.team8.backend.domain.bid.dto.BidResponse;
 import com.team8.backend.domain.bid.entity.Bid;
+import com.team8.backend.domain.bid.event.BidEvent;
+import com.team8.backend.domain.bid.event.BidEventListener;
 import com.team8.backend.domain.bid.repository.BidRepository;
 import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.domain.user.repository.UserRepository;
 import com.team8.backend.global.exception.CustomException;
 import com.team8.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,13 +30,15 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
 
+    private final ApplicationEventPublisher eventPublisher;
+    private static final Logger log = LoggerFactory.getLogger(BidService.class);
+
     @Transactional
-    public BidResponse createBid(BidRequest request) {
+    public BidResponse createBid(Long userId,BidRequest request) {
         Auction auction = auctionRepository.findById(request.auctionId())
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
 
-        User bidder = userRepository.findById(request.bidderId())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User bidder = userRepository.getReferenceById(userId); //탈퇴나 id 변경기능 없고, lazy 적용
 
         //1. 검증
         validateBid(auction, request,bidder);
@@ -53,6 +60,19 @@ public class BidService {
         } catch (Exception e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
+
+        log.info("[BidService] 이벤트발행시작");
+        // 🔥 이벤트 발행
+        eventPublisher.publishEvent(
+
+                new BidEvent(
+                        auction.getAuctionId(),
+                        auction.getCurrentPrice(),
+                        bidder.getUserId()
+                )
+        );
+
+        log.info("[BidService] 이벤트발행종료");
 
 
         return new BidResponse(
@@ -77,19 +97,21 @@ public class BidService {
             throw new CustomException(ErrorCode.INVALID_AUCTION_STATE);
         }
 
-        // 2. 현재가보다 높은지
+        // 2. 본인 경매 입찰 금지 (추가)
+        if (auction.getSeller().getUserId().equals((bidder.getUserId()))) {
+            throw new CustomException(ErrorCode.SELF_BIDDING);
+        }
+
+        // 3. 현재가보다 높은지
         if (request.bidPrice() <= auction.getCurrentPrice()) {
             throw new CustomException(ErrorCode.BID_TOO_LOW);
         }
 
-        // 3. 최소 입찰 단위 충족
+        // 4. 최소 입찰 단위 충족
         if ((request.bidPrice() - auction.getCurrentPrice()) < auction.getBidUnit()) {
             throw new CustomException(ErrorCode.INVALID_BID_UNIT);}
 
-        // 4. 본인 경매 입찰 금지 (추가)
-        if (auction.getSeller().getUserId().equals((bidder.getUserId()))) {
-            throw new CustomException(ErrorCode.SELF_BIDDING);
-        }
+
 
     }
 }
