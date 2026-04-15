@@ -1,10 +1,12 @@
 package com.team8.backend.domain.auction.controller;
 
 import com.team8.backend.domain.auction.dto.request.AuctionCreateRequest;
+import com.team8.backend.domain.auction.dto.request.AuctionUpdateRequest;
 import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.service.AuctionService;
 import com.team8.backend.global.response.ApiResponse;
 import com.team8.backend.global.security.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -64,6 +66,20 @@ public class AuctionController {
             @PathVariable Long auctionId
     ) {
         auctionService.withdrawAuction(userDetails.getUserId(), auctionId);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    /**
+     * 경매 정보 수정
+     * PATCH /api/auctions/{auctionId}
+     */
+    @PatchMapping("/{auctionId}")
+    public ResponseEntity<ApiResponse<Void>> updateAuction(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long auctionId,
+            @Valid @RequestBody AuctionUpdateRequest request
+    ) {
+        auctionService.updateAuction(userDetails.getUserId(), auctionId, request);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

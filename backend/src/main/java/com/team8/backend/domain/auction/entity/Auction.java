@@ -71,6 +71,17 @@ public class Auction {
         this.status = AuctionStatus.CANCELED;
     }
 
+    public void update(String title, String description, String imageUrl,
+                       Long startPrice, Integer bidUnit, LocalDateTime newEndedAt) {
+        this.title = title;
+        this.description = description;
+        this.imageUrl = imageUrl;
+        this.startPrice = startPrice;
+        this.currentPrice = startPrice; // 시작가가 바뀌면 현재가도 초기화
+        this.bidUnit = bidUnit;
+        this.endedAt = newEndedAt;
+    }
+
     public void extendEndTime(long minutes) {
         this.endedAt = this.endedAt.plusMinutes(minutes);
     }

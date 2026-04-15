@@ -1,6 +1,7 @@
 package com.team8.backend.domain.auction.service;
 
 import com.team8.backend.domain.auction.dto.request.AuctionCreateRequest;
+import com.team8.backend.domain.auction.dto.request.AuctionUpdateRequest;
 import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.entity.AuctionStatus;
@@ -20,7 +21,7 @@ import java.time.temporal.ChronoUnit;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true) // 클래스 레벨은 기본적으로 ReadOnly
+@Transactional(readOnly = true)
 public class AuctionService {
 
     private final AuctionRepository auctionRepository;
@@ -54,7 +55,6 @@ public class AuctionService {
      */
     @Transactional // 쓰기 작업이므로 ReadOnly 해제
     public AuctionResponse createAuction(Long userId, AuctionCreateRequest request) {
-        // (기존 createAuction 로직 동일...)
         User seller = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -118,5 +118,46 @@ public class AuctionService {
 
         // 4. 엔티티 내부 로직을 통해 철회 처리 (deletedAt 기록)
         auction.withdraw();
+    }
+
+    /**
+     * 경매 수정
+     */
+    @Transactional
+    public void updateAuction(Long userId, Long auctionId, AuctionUpdateRequest request) {
+        // 1. 존재하는 경매인지 확인
+        Auction auction = auctionRepository.findByAuctionIdAndDeletedAtIsNull(auctionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
+
+        // 2. 본인 확인 및 입찰 여부 체크
+        if (!auction.getSeller().getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+        if (auction.getLastBidder() != null) {
+            throw new CustomException(ErrorCode.AUCTION_HAS_BID);
+        }
+
+        // 3. 값이 있으면 수정본을, 없으면(null) 기존 값을 유지
+        String title = (request.title() != null) ? request.title() : auction.getTitle();
+        String description = (request.description() != null) ? request.description() : auction.getDescription();
+        String imageUrl = (request.imageUrl() != null) ? request.imageUrl() : auction.getImageUrl();
+        Long startPrice = (request.startPrice() != null) ? request.startPrice() : auction.getStartPrice();
+        Integer bidUnit = (request.bidUnit() != null) ? request.bidUnit() : auction.getBidUnit();
+
+        // 4. 경매 기간 리밸런싱
+        // durationInDays가 왔을 때만 시작 시간 기준으로 종료 시간을 다시 계산
+        LocalDateTime newEndedAt = (request.durationInDays() != null)
+                ? auction.getStartedAt().plusDays(request.durationInDays())
+                : auction.getEndedAt();
+
+        // 5. 전체 업데이트 실행 (JPA의 Dirty Checking으로 자동 반영)
+        auction.update(
+                title,
+                description,
+                imageUrl,
+                startPrice,
+                bidUnit,
+                newEndedAt
+        );
     }
 }
