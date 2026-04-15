@@ -4,9 +4,14 @@ import com.team8.backend.domain.order.dto.request.OrderAddressRequest;
 import com.team8.backend.domain.order.dto.request.OrderTrackingRequest;
 import com.team8.backend.domain.order.dto.response.OrderResponse;
 import com.team8.backend.domain.order.service.OrderService;
+import com.team8.backend.global.response.ApiResponse;
+import com.team8.backend.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -15,33 +20,48 @@ public class OrderController {
 
     private final OrderService orderService;
 
-    // 주문 상세 조회 /api/orders/{orderId}
+    // [참여자] 주문 상세 조회 /api/orders/{orderId}
     @GetMapping("/{orderId}")
-    public OrderResponse getOrder(@PathVariable Long orderId) {
-        return orderService.getOrder(orderId);
+    public ApiResponse<OrderResponse> getOrder(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ApiResponse.success(orderService.getOrder(orderId, userDetails.getUserId()));
     }
 
-    // 배송 정보 입력 (구매자용) /api/orders/{orderId}/shipping
+    // [구매자] 배송 정보 입력 /api/orders/{orderId}/shipping
     @PostMapping("/{orderId}/shipping")
-    public void inputShipping(
+    public ApiResponse<Void> updateAddress(
             @PathVariable Long orderId,
-            @Valid @RequestBody OrderAddressRequest request) {
-        orderService.updateAddress(orderId, request);
+            @Valid @RequestBody OrderAddressRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        orderService.updateAddress(orderId, request, userDetails.getUserId());
+        return ApiResponse.success(null);
     }
 
-    // 송장 등록 (판매자용) /api/orders/{orderId}/tracking
-    @PostMapping("/{orderId}/tracking")
-    public void registerTracking(
-            @PathVariable Long orderId,
-            @Valid @RequestBody OrderTrackingRequest request) {
-        orderService.registerTracking(orderId, request);
-    }
-
-    // 결제 (구매자용) /api/orders/{orderId}/pay
+    // [구매자] 결제 /api/orders/{orderId}/pay
     @PostMapping("/{orderId}/pay")
-    public void payOrder(@PathVariable Long orderId) {
-        orderService.payOrder(orderId);
+    public ApiResponse<Void> payOrder(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        orderService.payOrder(orderId, userDetails.getUserId());
+        return ApiResponse.success(null);
     }
 
+    // [판매자] 송장 번호 등록 /api/orders/{orderId}/tracking
+    @PostMapping("/{orderId}/tracking")
+    public ApiResponse<Void> registerTracking(
+            @PathVariable Long orderId,
+            @Valid @RequestBody OrderTrackingRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        orderService.registerTracking(orderId, request, userDetails.getUserId());
+        return ApiResponse.success(null);
+    }
 
+    // [참여자] 내 거래 내역 조회 (구매/판매 통합) /api/orders/me
+    @GetMapping("/me")
+    public ApiResponse<List<OrderResponse>> getMyOrders(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<OrderResponse> myOrders = orderService.getMyOrders(userDetails.getUserId());
+        return ApiResponse.success(myOrders);
+    }
 }

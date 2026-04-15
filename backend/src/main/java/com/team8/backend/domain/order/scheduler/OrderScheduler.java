@@ -39,7 +39,6 @@ public class OrderScheduler {
                 orderService.notPaidOrder(order.getOrderId());
             } catch (Exception e) {
                 log.error("미결제 대상 처리 중 오류 {}: {}", order.getOrderId(), e.getMessage(), e);
-
             }
         });
     }
@@ -55,7 +54,6 @@ public class OrderScheduler {
                 orderService.notDeliveredOrder(order.getOrderId());
             } catch (Exception e) {
                 log.error("미출고 대상 처리 중 오류 {}: {}", order.getOrderId(), e.getMessage(), e);
-
             }
         });
     }

@@ -32,7 +32,9 @@ public enum ErrorCode {
     ALREADY_PAID(HttpStatus.BAD_REQUEST, "400-8", "이미 결제 완료된 주문입니다."),
     TRACKING_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "400-9", "이미 송장이 등록되어 있습니다."),
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "404-3", "주문을 찾을 수 없습니다."),
-
+    SHIPPING_ADDRESS_MISSING(HttpStatus.BAD_REQUEST, "400-17", "배송지 정보가 입력되지 않았습니다."),
+    DELIVERY_EXPIRED(HttpStatus.BAD_REQUEST, "400-18", "발송 기한이 만료되었습니다."),
+    SHIPPING_ALREADY_STARTED(HttpStatus.BAD_REQUEST, "400-19", "이미 배송이 시작되어 주소를 변경할 수 없습니다."),
     // BID
     BID_TOO_LOW(HttpStatus.BAD_REQUEST, "400-10", "입찰 금액이 너무 낮습니다."),
     INVALID_BID_UNIT(HttpStatus.BAD_REQUEST, "400-11", "최소 입찰 단위를 지켜주세요."),
