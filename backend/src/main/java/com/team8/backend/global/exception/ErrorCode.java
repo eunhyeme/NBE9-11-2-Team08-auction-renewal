@@ -20,6 +20,7 @@ public enum ErrorCode {
     // MEMBERSHIP
     ALREADY_APPLIED(HttpStatus.BAD_REQUEST, "400-3", "이미 신청이 완료되었습니다."),
     INVALID_APPLICATION_STATE(HttpStatus.BAD_REQUEST, "400-4", "이미 처리된 신청입니다."),
+    ADMIN_CANNOT_APPLY_MEMBERSHIP(HttpStatus.BAD_REQUEST, "400-20", "관리자는 블루체크 신청을 할 수 없습니다."),
 
     // USER
     DUPLICATE_EMAIL(HttpStatus.BAD_REQUEST, "400-5", "이미 사용 중인 이메일입니다."),

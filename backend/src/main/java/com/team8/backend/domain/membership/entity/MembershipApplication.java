@@ -1,6 +1,8 @@
 package com.team8.backend.domain.membership.entity;
 
 import com.team8.backend.domain.user.entity.User;
+import com.team8.backend.global.exception.CustomException;
+import com.team8.backend.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -33,10 +35,9 @@ public class MembershipApplication {
 
     protected MembershipApplication() {}
 
-    public MembershipApplication(User user, MembershipStatus status, String reason, LocalDateTime requestedAt) {
+    public MembershipApplication(User user, LocalDateTime requestedAt) {
         this.user = user;
-        this.status = status;
-        this.reason = reason;
+        this.status = MembershipStatus.PENDING;
         this.requestedAt = requestedAt;
     }
 
@@ -49,14 +50,27 @@ public class MembershipApplication {
     public Long getReviewedBy() { return reviewedBy; }
 
     public void approve(Long reviewerId, LocalDateTime reviewedAt) {
+        validatePending();
         this.status = MembershipStatus.APPROVED;
+        this.reason = null;
         this.reviewedBy = reviewerId;
         this.reviewedAt = reviewedAt;
     }
 
-    public void reject(Long reviewerId, LocalDateTime reviewedAt) {
+    public void reject(Long reviewerId, LocalDateTime reviewedAt, String reason) {
+        validatePending();
+        if (reason == null || reason.isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
         this.status = MembershipStatus.REJECTED;
+        this.reason = reason;
         this.reviewedBy = reviewerId;
         this.reviewedAt = reviewedAt;
+    }
+
+    private void validatePending() {
+        if (this.status != MembershipStatus.PENDING) {
+            throw new CustomException(ErrorCode.INVALID_APPLICATION_STATE);
+        }
     }
 }

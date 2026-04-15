@@ -3,6 +3,7 @@ package com.team8.backend.global.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.team8.backend.global.exception.CustomException;
 import com.team8.backend.global.exception.ErrorCode;
+import com.team8.backend.global.response.ApiResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,7 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                 response.setCharacterEncoding("UTF-8");
                 response.getWriter().write(
-                        objectMapper.writeValueAsString(new CustomException(errorCode))
+                        objectMapper.writeValueAsString(ApiResponse.error(errorCode))
                 );
                 return;
             }
