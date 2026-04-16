@@ -3,10 +3,10 @@ package com.team8.backend.domain.bid.service;
 import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
 import com.team8.backend.domain.bid.dto.BidRequest;
+import com.team8.backend.domain.bid.dto.MyBidResponse;
 import com.team8.backend.domain.bid.dto.BidResponse;
 import com.team8.backend.domain.bid.entity.Bid;
 import com.team8.backend.domain.bid.event.BidEvent;
-import com.team8.backend.domain.bid.event.BidEventListener;
 import com.team8.backend.domain.bid.repository.BidRepository;
 import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.domain.user.repository.UserRepository;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,18 @@ public class BidService {
 
     private final ApplicationEventPublisher eventPublisher;
     private static final Logger log = LoggerFactory.getLogger(BidService.class);
+
+    public List<MyBidResponse> getMyBids(Long userId) {
+        return bidRepository.findLatestByBidderUserId(userId).stream()
+                .map(bid -> MyBidResponse.from(bid, userId))
+                .toList();
+    }
+
+    public List<MyBidResponse> getMyBidHistory(Long userId, Long auctionId) {
+        return bidRepository.findAllByBidderUserIdAndAuctionIdOrderByBidedAtDesc(userId, auctionId).stream()
+                .map(bid -> MyBidResponse.from(bid, userId))
+                .toList();
+    }
 
     @Transactional
     public BidResponse createBid(Long userId,BidRequest request) {
