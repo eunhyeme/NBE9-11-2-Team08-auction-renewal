@@ -55,6 +55,11 @@ public class AuctionService {
      */
     @Transactional // 쓰기 작업이므로 ReadOnly 해제
     public AuctionResponse createAuction(Long userId, AuctionCreateRequest request) {
+        LocalDateTime now = LocalDateTime.now();
+        if (request.startedAt().isBefore(now)) {
+            throw new CustomException(ErrorCode.AUCTION_START_PAST);
+        }
+
         User seller = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -149,6 +154,10 @@ public class AuctionService {
         LocalDateTime newEndedAt = (request.durationInDays() != null)
                 ? auction.getStartedAt().plusDays(request.durationInDays())
                 : auction.getEndedAt();
+
+        if (newEndedAt.isBefore(LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.INVALID_AUCTION_TIME);
+        }
 
         // 5. 전체 업데이트 실행 (JPA의 Dirty Checking으로 자동 반영)
         auction.update(

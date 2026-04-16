@@ -4,6 +4,7 @@ import com.team8.backend.domain.auction.dto.request.AuctionCreateRequest;
 import com.team8.backend.domain.auction.dto.request.AuctionUpdateRequest;
 import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.service.AuctionService;
+import com.team8.backend.global.exception.ErrorCode;
 import com.team8.backend.global.response.ApiResponse;
 import com.team8.backend.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -15,7 +16,12 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -48,10 +54,27 @@ public class AuctionController {
      * 경매 상품 등록
      */
     @PostMapping
-    public ResponseEntity<ApiResponse<AuctionResponse>> createAuction(
+    public ResponseEntity<ApiResponse<?>> createAuction(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestBody AuctionCreateRequest request
+            @Valid @RequestBody AuctionCreateRequest request,
+            BindingResult bindingResult
     ) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            boolean isBidUnitError = false;
+            for (FieldError error : bindingResult.getFieldErrors()) {
+                errors.put(error.getField(), error.getDefaultMessage());
+                // 입찰 단위 검증 메서드명이나 필드명으로 체크
+                if ("bidUnitMultipleOf100".equals(error.getField())) {
+                    isBidUnitError = true;
+                }
+            }
+            // 입찰 단위 에러라면 전용 코드를, 아니면 일반 검증 코드를 씁니다.
+            ErrorCode code = isBidUnitError ? ErrorCode.BID_UNIT_NOT_MULTIPLE : ErrorCode.VALIDATION_ERROR;
+            return ResponseEntity.status(code.getHttpStatus())
+                    .body(new ApiResponse<>(code.getCode(), code.getMessage(), errors));
+        }
+
         AuctionResponse response = auctionService.createAuction(userDetails.getUserId(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
@@ -74,11 +97,28 @@ public class AuctionController {
      * PATCH /api/auctions/{auctionId}
      */
     @PatchMapping("/{auctionId}")
-    public ResponseEntity<ApiResponse<Void>> updateAuction(
+    public ResponseEntity<ApiResponse<?>> updateAuction(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long auctionId,
-            @Valid @RequestBody AuctionUpdateRequest request
+            @Valid @RequestBody AuctionUpdateRequest request,
+            BindingResult bindingResult
     ) {
+        if (bindingResult.hasErrors()) {
+            Map<String, String> errors = new HashMap<>();
+            boolean isBidUnitError = false;
+            for (FieldError error : bindingResult.getFieldErrors()) {
+                errors.put(error.getField(), error.getDefaultMessage());
+                // 입찰 단위 검증 메서드명이나 필드명으로 체크
+                if ("bidUnitMultipleOf100".equals(error.getField())) {
+                    isBidUnitError = true;
+                }
+            }
+            // 입찰 단위 에러라면 전용 코드를, 아니면 일반 검증 코드를 씁니다.
+            ErrorCode code = isBidUnitError ? ErrorCode.BID_UNIT_NOT_MULTIPLE : ErrorCode.VALIDATION_ERROR;
+            return ResponseEntity.status(code.getHttpStatus())
+                    .body(new ApiResponse<>(code.getCode(), code.getMessage(), errors));
+        }
+
         auctionService.updateAuction(userDetails.getUserId(), auctionId, request);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
