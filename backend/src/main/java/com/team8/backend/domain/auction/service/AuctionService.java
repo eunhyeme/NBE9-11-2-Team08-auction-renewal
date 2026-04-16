@@ -28,6 +28,7 @@ public class AuctionService {
 
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
+    private final FileService fileService;
     private final OrderService orderService;
 
     /**
@@ -56,12 +57,15 @@ public class AuctionService {
     /**
      * 경매 상품 등록
      */
-    @Transactional // 쓰기 작업이므로 ReadOnly 해제
-    public AuctionResponse createAuction(Long userId, AuctionCreateRequest request) {
-        LocalDateTime now = LocalDateTime.now();
-        if (request.startedAt().isBefore(now)) {
-            throw new CustomException(ErrorCode.AUCTION_START_PAST);
+    @Transactional
+    public AuctionResponse createAuction(Long userId, AuctionCreateRequest request, org.springframework.web.multipart.MultipartFile image) throws java.io.IOException {
+        // 1. 등록 시 이미지는 필수
+        if (image == null || image.isEmpty()) {
+            throw new CustomException(ErrorCode.IMAGE_REQUIRED);
         }
+
+        // 2. 파일 저장 및 URL 반환
+        String savedImageUrl = fileService.saveFile(image);
 
         User seller = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -74,7 +78,7 @@ public class AuctionService {
         Auction auction = Auction.builder()
                 .seller(seller)
                 .title(request.title())
-                .imageUrl(request.imageUrl())
+                .imageUrl(savedImageUrl)
                 .description(request.description())
                 .startPrice(request.startPrice())
                 .currentPrice(request.startPrice())
@@ -84,8 +88,7 @@ public class AuctionService {
                 .endedAt(end)
                 .build();
 
-        Auction savedAuction = auctionRepository.save(auction);
-        return AuctionResponse.from(savedAuction);
+        return AuctionResponse.from(auctionRepository.save(auction));
     }
 
     private void validateAuctionTime(LocalDateTime start, LocalDateTime end) {
@@ -108,9 +111,9 @@ public class AuctionService {
     /**
      * 경매 철회 (Soft Delete)
      */
-    @Transactional // 💡 데이터 상태를 변경하므로 ReadOnly 해제
+    @Transactional
     public void withdrawAuction(Long userId, Long auctionId) {
-        // 1. 존재하는(삭제되지 않은) 경매인지 DB에서 바로 확인
+        // 1. 존재하는 경매인지 확인
         Auction auction = auctionRepository.findByAuctionIdAndDeletedAtIsNull(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
 
@@ -119,12 +122,16 @@ public class AuctionService {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
 
-        // 3. 입찰 존재 여부 확인 (신뢰를 위해 입찰자가 생기면 철회 불가)
+        // 3. 입찰 존재 여부 확인
         if (auction.getLastBidder() != null) {
             throw new CustomException(ErrorCode.AUCTION_HAS_BID);
         }
 
-        // 4. 엔티티 내부 로직을 통해 철회 처리 (deletedAt 기록)
+        // 4. 물리 파일 삭제 로직 추가
+        // 데이터는 Soft Delete로 남지만, 용량 관리를 위해 이미지는 삭제합니다.
+        fileService.deleteFile(auction.getImageUrl());
+
+        // 5. 엔티티 내부 로직을 통해 철회 처리
         auction.withdraw();
     }
 
@@ -132,12 +139,10 @@ public class AuctionService {
      * 경매 수정
      */
     @Transactional
-    public void updateAuction(Long userId, Long auctionId, AuctionUpdateRequest request) {
-        // 1. 존재하는 경매인지 확인
+    public void updateAuction(Long userId, Long auctionId, AuctionUpdateRequest request, org.springframework.web.multipart.MultipartFile image) throws java.io.IOException {
         Auction auction = auctionRepository.findByAuctionIdAndDeletedAtIsNull(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
 
-        // 2. 본인 확인 및 입찰 여부 체크
         if (!auction.getSeller().getUserId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
@@ -145,32 +150,30 @@ public class AuctionService {
             throw new CustomException(ErrorCode.AUCTION_HAS_BID);
         }
 
-        // 3. 값이 있으면 수정본을, 없으면(null) 기존 값을 유지
-        String title = (request.title() != null) ? request.title() : auction.getTitle();
-        String description = (request.description() != null) ? request.description() : auction.getDescription();
-        String imageUrl = (request.imageUrl() != null) ? request.imageUrl() : auction.getImageUrl();
-        Long startPrice = (request.startPrice() != null) ? request.startPrice() : auction.getStartPrice();
-        Integer bidUnit = (request.bidUnit() != null) ? request.bidUnit() : auction.getBidUnit();
+        // 1. 이미지 교체 로직
+        String imageUrl = auction.getImageUrl();
+        if (image != null && !image.isEmpty()) {
+            fileService.deleteFile(auction.getImageUrl());
+            imageUrl = fileService.saveFile(image);
+        }
 
-        // 4. 경매 기간 리밸런싱
-        // durationInDays가 왔을 때만 시작 시간 기준으로 종료 시간을 다시 계산
-        LocalDateTime newEndedAt = (request.durationInDays() != null)
-                ? auction.getStartedAt().plusDays(request.durationInDays())
-                : auction.getEndedAt();
+        // 2. 리뷰 반영: request 및 필드 Null 체크 강화
+        // request 자체가 null일 경우 NPE가 발생하는 것을 방지합니다.
+        String title = (request != null && request.title() != null) ? request.title() : auction.getTitle();
+        String description = (request != null && request.description() != null) ? request.description() : auction.getDescription();
+        Long startPrice = (request != null && request.startPrice() != null) ? request.startPrice() : auction.getStartPrice();
+        Integer bidUnit = (request != null && request.bidUnit() != null) ? request.bidUnit() : auction.getBidUnit();
+
+        LocalDateTime newEndedAt = auction.getEndedAt();
+        if (request != null && request.durationInDays() != null) {
+            newEndedAt = auction.getStartedAt().plusDays(request.durationInDays());
+        }
 
         if (newEndedAt.isBefore(LocalDateTime.now())) {
             throw new CustomException(ErrorCode.INVALID_AUCTION_TIME);
         }
 
-        // 5. 전체 업데이트 실행 (JPA의 Dirty Checking으로 자동 반영)
-        auction.update(
-                title,
-                description,
-                imageUrl,
-                startPrice,
-                bidUnit,
-                newEndedAt
-        );
+        auction.update(title, description, imageUrl, startPrice, bidUnit, newEndedAt);
     }
 
     // [스케줄러] 경매 마감 처리
@@ -179,12 +182,12 @@ public class AuctionService {
         // 존재하는 경매인지 확인 (락 사용)
         Auction auction = auctionRepository.findByIdWithLock(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
-        
+
         // 이미 마감된 경매라면 종료해서 중복 주문 생성 방지
         if (auction.getStatus() != AuctionStatus.ONGOING) {
             return;
         }
-        
+
         // 낙찰자 존재 여부에 따라 낙찰(WON) or 유찰(UNSOLD)
         auction.close();
 

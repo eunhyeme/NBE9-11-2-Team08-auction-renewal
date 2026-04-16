@@ -9,9 +9,6 @@ public record AuctionCreateRequest(
         @NotBlank(message = "경매 제목은 필수입니다.")
         String title,
 
-        @NotBlank(message = "상품 이미지는 필수입니다.")
-        String imageUrl,
-
         @NotBlank(message = "상품 설명은 필수입니다.")
         String description,
 

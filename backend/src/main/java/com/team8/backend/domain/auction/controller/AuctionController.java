@@ -53,29 +53,21 @@ public class AuctionController {
     /**
      * 경매 상품 등록
      */
-    @PostMapping
+    @PostMapping(consumes = {org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ApiResponse<?>> createAuction(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody AuctionCreateRequest request,
-            BindingResult bindingResult
-    ) {
+            @RequestPart("request") @Valid AuctionCreateRequest request,
+            BindingResult bindingResult,
+            @RequestPart(value = "image", required = false) org.springframework.web.multipart.MultipartFile image
+    ) throws java.io.IOException {
+
         if (bindingResult.hasErrors()) {
-            Map<String, String> errors = new HashMap<>();
-            boolean isBidUnitError = false;
-            for (FieldError error : bindingResult.getFieldErrors()) {
-                errors.put(error.getField(), error.getDefaultMessage());
-                // 입찰 단위 검증 메서드명이나 필드명으로 체크
-                if ("bidUnitMultipleOf100".equals(error.getField())) {
-                    isBidUnitError = true;
-                }
-            }
-            // 입찰 단위 에러라면 전용 코드를, 아니면 일반 검증 코드를 씁니다.
-            ErrorCode code = isBidUnitError ? ErrorCode.BID_UNIT_NOT_MULTIPLE : ErrorCode.VALIDATION_ERROR;
-            return ResponseEntity.status(code.getHttpStatus())
-                    .body(new ApiResponse<>(code.getCode(), code.getMessage(), errors));
+            return handleValidationErrors(bindingResult);
         }
 
-        AuctionResponse response = auctionService.createAuction(userDetails.getUserId(), request);
+        // 이미지 필수 체크 및 저장을 서비스 내부에서 한 번에 처리하도록 위임합니다.
+        AuctionResponse response = auctionService.createAuction(userDetails.getUserId(), request, image);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response));
     }
 
@@ -96,30 +88,36 @@ public class AuctionController {
      * 경매 정보 수정
      * PATCH /api/auctions/{auctionId}
      */
-    @PatchMapping("/{auctionId}")
+    @PatchMapping(value = "/{auctionId}", consumes = {org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ApiResponse<?>> updateAuction(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long auctionId,
-            @Valid @RequestBody AuctionUpdateRequest request,
-            BindingResult bindingResult
-    ) {
+            @RequestPart(value = "request", required = false) @Valid AuctionUpdateRequest request,
+            BindingResult bindingResult,
+            @RequestPart(value = "image", required = false) org.springframework.web.multipart.MultipartFile image
+    ) throws java.io.IOException {
+
         if (bindingResult.hasErrors()) {
-            Map<String, String> errors = new HashMap<>();
-            boolean isBidUnitError = false;
-            for (FieldError error : bindingResult.getFieldErrors()) {
-                errors.put(error.getField(), error.getDefaultMessage());
-                // 입찰 단위 검증 메서드명이나 필드명으로 체크
-                if ("bidUnitMultipleOf100".equals(error.getField())) {
-                    isBidUnitError = true;
-                }
-            }
-            // 입찰 단위 에러라면 전용 코드를, 아니면 일반 검증 코드를 씁니다.
-            ErrorCode code = isBidUnitError ? ErrorCode.BID_UNIT_NOT_MULTIPLE : ErrorCode.VALIDATION_ERROR;
-            return ResponseEntity.status(code.getHttpStatus())
-                    .body(new ApiResponse<>(code.getCode(), code.getMessage(), errors));
+            return handleValidationErrors(bindingResult);
         }
 
-        auctionService.updateAuction(userDetails.getUserId(), auctionId, request);
+        // 수정도 서비스에 이미지 파일을 그대로 던져줍니다.
+        auctionService.updateAuction(userDetails.getUserId(), auctionId, request, image);
         return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    // 에러 처리 중복 제거를 위한 헬퍼 메소드
+    private ResponseEntity<ApiResponse<?>> handleValidationErrors(BindingResult bindingResult) {
+        Map<String, String> errors = new HashMap<>();
+        boolean isBidUnitError = false;
+        for (FieldError error : bindingResult.getFieldErrors()) {
+            errors.put(error.getField(), error.getDefaultMessage());
+            if ("bidUnitMultipleOf100".equals(error.getField())) {
+                isBidUnitError = true;
+            }
+        }
+        ErrorCode code = isBidUnitError ? ErrorCode.BID_UNIT_NOT_MULTIPLE : ErrorCode.VALIDATION_ERROR;
+        return ResponseEntity.status(code.getHttpStatus())
+                .body(new ApiResponse<>(code.getCode(), code.getMessage(), errors));
     }
 }

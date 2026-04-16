@@ -48,7 +48,8 @@ public enum ErrorCode {
     AUCTION_NOT_FOUND(HttpStatus.NOT_FOUND, "404-4", "경매를 찾을 수 없습니다."),
     INVALID_AUCTION_TIME(HttpStatus.BAD_REQUEST, "400-16", "경매 시간이 유효하지 않습니다."),
     BID_UNIT_NOT_MULTIPLE(HttpStatus.BAD_REQUEST, "400-21", "입찰 단위는 100원 단위여야 합니다."),
-    AUCTION_START_PAST(HttpStatus.BAD_REQUEST, "400-22", "경매 시작 시간은 현재보다 미래여야 합니다.");
+    AUCTION_START_PAST(HttpStatus.BAD_REQUEST, "400-22", "경매 시작 시간은 현재보다 미래여야 합니다."),
+    IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "400-23", "상품 이미지는 필수입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
