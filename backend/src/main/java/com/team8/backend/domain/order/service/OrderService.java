@@ -5,6 +5,9 @@ import com.team8.backend.domain.order.dto.request.OrderAddressRequest;
 import com.team8.backend.domain.order.dto.request.OrderTrackingRequest;
 import com.team8.backend.domain.order.dto.response.OrderResponse;
 import com.team8.backend.domain.order.entity.Order;
+import com.team8.backend.domain.order.entity.OrderFilter;
+import com.team8.backend.domain.order.entity.OrderHistoryRole;
+import com.team8.backend.domain.order.entity.OrderStatus;
 import com.team8.backend.domain.order.repository.OrderRepository;
 import com.team8.backend.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +25,10 @@ import java.util.List;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private static final Set<OrderStatus> ONGOING_STATUSES =
+            EnumSet.of(OrderStatus.AWAITING_PAYMENT, OrderStatus.PAID, OrderStatus.DELIVERING);
+    private static final Set<OrderStatus> COMPLETED_STATUSES =
+            EnumSet.of(OrderStatus.DELIVERED, OrderStatus.NOT_PAID, OrderStatus.NOT_DELIVERED);
 
     // 경매 낙찰 시 주문 생성
     @Transactional
@@ -81,14 +90,39 @@ public class OrderService {
         order.markNotDelivered();
     }
 
-    // [참여자] 내 거래 내역 조회 (구매/판매 통합)
-    public List<OrderResponse> getMyOrders(Long userId) {
-        // 참여자 주문 목록을 가져오기
-        List<Order> orders = orderRepository.findAllByUserId(userId);
+    // [참여자] 내 거래 내역 조회
+    public List<OrderResponse> getMyOrders(Long userId, OrderHistoryRole role, OrderFilter filter) {
+        List<Order> orders;
+        Set<OrderStatus> statuses = getStatuses(filter);
+
+        if (role == OrderHistoryRole.BUYER) {
+            orders = (statuses == null)
+                    ? orderRepository.findAllByBidder_UserIdOrderByCreatedAtDesc(userId)
+                    : orderRepository.findAllByBidder_UserIdAndStatusInOrderByCreatedAtDesc(userId, statuses);
+        } else if (role == OrderHistoryRole.SELLER) {
+            orders = (statuses == null)
+                    ? orderRepository.findAllBySeller_UserIdOrderByCreatedAtDesc(userId)
+                    : orderRepository.findAllBySeller_UserIdAndStatusInOrderByCreatedAtDesc(userId, statuses);
+        } else {
+            orders = (statuses == null)
+                    ? orderRepository.findAllByUserId(userId)
+                    : orderRepository.findAllByUserIdAndStatusIn(userId, statuses);
+        }
 
         // 조회된 엔티티 리스트를 스트림을 통해 응답용 DTO 리스트로 변환
         return orders.stream()
                 .map(OrderResponse::from)
                 .toList();
+    }
+
+    private Set<OrderStatus> getStatuses(OrderFilter filter) {
+        if (filter == null) {
+            return null;
+        }
+
+        return switch (filter) {
+            case ONGOING -> ONGOING_STATUSES;
+            case COMPLETED -> COMPLETED_STATUSES;
+        };
     }
 }

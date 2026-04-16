@@ -7,8 +7,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import static com.team8.backend.global.exception.ErrorCode.*;
+import static com.team8.backend.global.exception.ErrorCode.ACCESS_DENIED;
+import static com.team8.backend.global.exception.ErrorCode.INTERNAL_SERVER_ERROR;
+import static com.team8.backend.global.exception.ErrorCode.INVALID_REQUEST;
+import static com.team8.backend.global.exception.ErrorCode.VALIDATION_ERROR;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -24,10 +29,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.getHttpStatus()).body(ApiResponse.error(errorCode));
     }
 
-    //이거 하나만 씀
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException e) {
+        ErrorCode errorCode = INVALID_REQUEST;
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(ApiResponse.error(errorCode));
+    }
+
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
-
         ErrorCode errorCode = e.getErrorCode();
 
         return ResponseEntity

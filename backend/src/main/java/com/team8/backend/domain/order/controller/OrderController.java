@@ -3,9 +3,13 @@ package com.team8.backend.domain.order.controller;
 import com.team8.backend.domain.order.dto.request.OrderAddressRequest;
 import com.team8.backend.domain.order.dto.request.OrderTrackingRequest;
 import com.team8.backend.domain.order.dto.response.OrderResponse;
+import com.team8.backend.domain.order.entity.OrderFilter;
+import com.team8.backend.domain.order.entity.OrderHistoryRole;
 import com.team8.backend.domain.order.service.OrderService;
 import com.team8.backend.global.response.ApiResponse;
 import com.team8.backend.global.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -57,11 +61,14 @@ public class OrderController {
         return ApiResponse.success(null);
     }
 
-    // [참여자] 내 거래 내역 조회 (구매/판매 통합) /api/orders/me
+    // [참여자] 내 거래 내역 조회 /api/orders/me
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/me")
     public ApiResponse<List<OrderResponse>> getMyOrders(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-        List<OrderResponse> myOrders = orderService.getMyOrders(userDetails.getUserId());
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) OrderHistoryRole role,
+            @RequestParam(required = false) OrderFilter filter) {
+        List<OrderResponse> myOrders = orderService.getMyOrders(userDetails.getUserId(), role, filter);
         return ApiResponse.success(myOrders);
     }
 }
