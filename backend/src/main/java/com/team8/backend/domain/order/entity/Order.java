@@ -5,10 +5,13 @@ import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.global.exception.CustomException;
 import com.team8.backend.global.exception.ErrorCode;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
+@SuperBuilder
 @Getter
 @Entity
 @Table(name = "orders")
@@ -58,8 +61,9 @@ public class Order {
     private LocalDateTime deliveryDeadline;
 
     @Version // 낙관적 락을 위한 필드 추가
+    @Builder.Default // 💡 빌더를 통해 생성할 때도 0L이 들어가도록 보장합니다.
     @Column(name = "version", nullable = false)
-    private Long version;
+    private Long version = 0L;
 
     protected Order() {
     }
@@ -90,10 +94,19 @@ public class Order {
     }
 
     public void markNotPaid() {
+        // 시간 체크
+        if (this.status != OrderStatus.AWAITING_PAYMENT ||
+                this.paymentDeadline.isAfter(LocalDateTime.now())) {
+            return;
+        }
         this.status = OrderStatus.NOT_PAID;
     }
 
     public void markNotDelivered() {
+        // 시간 체크
+        if (this.status != OrderStatus.PAID || this.deliveryDeadline.isAfter(LocalDateTime.now())) {
+            return;
+        }
         this.status = OrderStatus.NOT_DELIVERED;
     }
 

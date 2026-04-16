@@ -26,4 +26,6 @@ public interface AuctionRepository extends JpaRepository<Auction, Long> {
     @Lock(LockModeType.OPTIMISTIC)
     @Query("select a from Auction a where a.auctionId = :id and a.deletedAt is null")
     Optional<Auction> findByIdWithLock(@Param("id") Long id);
+
+   
 }

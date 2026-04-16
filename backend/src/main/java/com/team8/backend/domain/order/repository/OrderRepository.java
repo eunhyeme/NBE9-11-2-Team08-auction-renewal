@@ -4,18 +4,26 @@ import com.team8.backend.domain.order.entity.Order;
 import com.team8.backend.domain.order.entity.OrderStatus;
 import com.team8.backend.global.exception.CustomException;
 import com.team8.backend.global.exception.ErrorCode;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
     // 공통 조회 로직
     default Order getOrThrow(Long orderId) {
         return findById(orderId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND)); // 404-3
+    }
+    // 낙관성 락을 적용한 조회 로직
+    default Order getWithLockOrThrow(Long orderId) {
+        return findByIdWithLock(orderId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND)); // 404-3
     }
 
@@ -47,4 +55,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("userId") Long userId,
             @Param("statuses") Collection<OrderStatus> statuses
     );
+    // 낙관적 락을 적용한 findById
+    @Lock(LockModeType.OPTIMISTIC)
+    @Query("select o from Order o where o.orderId = :id")
+    Optional<Order> findByIdWithLock(@Param("id") Long id);
 }

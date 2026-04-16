@@ -195,7 +195,5 @@ public class AuctionService {
         if (auction.getStatus() == AuctionStatus.WON) {
             orderService.createOrder(auction, auction.getLastBidder(), auction.getCurrentPrice());
         }
-
-        auctionRepository.save(auction);
     }
 }

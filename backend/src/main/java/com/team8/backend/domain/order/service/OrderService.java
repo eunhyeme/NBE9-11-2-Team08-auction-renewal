@@ -12,6 +12,7 @@ import com.team8.backend.domain.order.repository.OrderRepository;
 import com.team8.backend.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -61,7 +62,7 @@ public class OrderService {
     // [구매자] 결제 처리 (AWAITING_PAYMENT -> PAID)
     @Transactional
     public void payOrder(Long orderId, Long userId) {
-        Order order = orderRepository.getOrThrow(orderId);
+        Order order = orderRepository.getWithLockOrThrow(orderId);
         order.validateBuyer(userId);
         order.validatePaymentEligible();
         order.pay(LocalDateTime.now());
@@ -70,23 +71,35 @@ public class OrderService {
     // [판매자] 송장 번호 등록 및 배송 시작  (PAID-> DELIVERING)
     @Transactional
     public void registerTracking(Long orderId, OrderTrackingRequest request, Long userId) {
-        Order order = orderRepository.getOrThrow(orderId);
+        Order order = orderRepository.getWithLockOrThrow(orderId);
         order.validateSeller(userId);
         order.validateShippingEligible();
         order.startDelivery(request.trackingNumber());
     }
 
     // [스케줄러] 미결제 처리 (AWAITING_PAYMENT -> NOT_PAID)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notPaidOrder(Long orderId) {
-        Order order = orderRepository.getOrThrow(orderId);
+        // 낙관성 락을 적용한 조회
+        Order order = orderRepository.getWithLockOrThrow(orderId);
+        
+        // 이미 상태가 변했다면 즉시 종료
+        if (order.getStatus() != OrderStatus.AWAITING_PAYMENT) {
+            return;
+        }
         order.markNotPaid();
     }
 
     // [스케줄러] 미출고 처리 (PAID -> NOT_DELIVERED)
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notDeliveredOrder(Long orderId) {
-        Order order = orderRepository.getOrThrow(orderId);
+        // 낙관성 락을 적용한 조회
+        Order order = orderRepository.getWithLockOrThrow(orderId);
+        
+        //이미 상태가 변했다면 즉시 종료
+        if (order.getStatus() != OrderStatus.PAID) {
+            return;
+        }
         order.markNotDelivered();
     }
 
