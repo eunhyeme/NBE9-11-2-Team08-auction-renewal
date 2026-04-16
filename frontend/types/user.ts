@@ -11,11 +11,6 @@ export interface UserMeResponse {
 
 export interface LoginResponse {
   accessToken: string;
-  userId: number;
-  email: string;
-  nickname: string;
-  hasBluecheck: boolean;
-  role: UserRole;
 }
 
 export interface SignupRequest {

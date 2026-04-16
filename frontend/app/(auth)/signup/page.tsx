@@ -64,7 +64,7 @@ export default function SignupPage() {
         </CardHeader>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="flex flex-col gap-4 pb-4">
             {/* 이메일 */}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">이메일</Label>

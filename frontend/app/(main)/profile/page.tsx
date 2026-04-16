@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Settings, BadgePlus } from "lucide-react";
@@ -68,17 +68,18 @@ function OrderList({ orders, filter, onFilterChange, emptyMessage }: OrderListPr
 // ─── 페이지 ──────────────────────────────────────────────────────
 export default function ProfilePage() {
   const router = useRouter();
-  const { isLoggedIn, nickname, hasBluecheck, role } = useAuthStore();
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const [purchaseFilter, setPurchaseFilter] = useState<OrderFilter>("all");
   const [salesFilter, setSalesFilter] = useState<OrderFilter>("all");
 
   const { data: me, isLoading, isError } = useMe();
   const applyMembership = useApplyMembership();
 
-  if (!isLoggedIn) {
-    router.replace("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoggedIn) router.replace("/login");
+  }, [isLoggedIn, router]);
+
+  if (!isLoggedIn) return null;
 
   if (isLoading) {
     return <LoadingSpinner className="py-24" size="lg" />;
@@ -109,15 +110,15 @@ export default function ProfilePage() {
           {/* 아바타 */}
           <Avatar className="h-16 w-16">
             <AvatarFallback className="text-2xl">
-              {nickname?.[0]?.toUpperCase() ?? "U"}
+              {me?.nickname?.[0]?.toUpperCase() ?? "U"}
             </AvatarFallback>
           </Avatar>
 
           {/* 정보 */}
           <div className="flex-1 flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <span className="text-xl font-bold">{me?.nickname ?? nickname}</span>
-              {hasBluecheck && (
+              <span className="text-xl font-bold">{me?.nickname}</span>
+              {me?.hasBluecheck && (
                 <MembershipBadge className="h-5 w-5" />
               )}
             </div>
@@ -136,7 +137,7 @@ export default function ProfilePage() {
               <Settings className="h-4 w-4" />
               프로필 수정
             </Link>
-            {!hasBluecheck && role !== "ROLE_ADMIN" && (
+            {!me?.hasBluecheck && me?.role !== "ROLE_ADMIN" && (
               <Button
                 variant="outline"
                 size="sm"

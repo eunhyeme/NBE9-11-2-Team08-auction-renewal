@@ -19,41 +19,35 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { loginSchema, type LoginFormValues } from "@/lib/validations/userSchema";
-import { login } from "@/lib/api/user";
-import { useAuthStore } from "@/lib/auth/store";
+import { useLogin } from "@/lib/hooks/useLogin";
 import { ApiError } from "@/types/api";
 
 export default function LoginPage() {
   const router = useRouter();
-  const loginStore = useAuthStore((s) => s.login);
+  const { mutate: loginMutate, isPending } = useLogin();
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
-    try {
-      const data = await login(values.email, values.password);
-      loginStore({
-        userId: data.userId,
-        email: data.email,
-        nickname: data.nickname,
-        hasBluecheck: data.hasBluecheck,
-        role: data.role,
-      });
-      toast.success(`${data.nickname}님, 환영합니다!`);
-      router.replace("/");
-    } catch (err) {
-      if (err instanceof ApiError) {
-        toast.error(err.message);
-      } else {
-        toast.error("로그인 중 오류가 발생했습니다.");
-      }
-    }
+  const onSubmit = (values: LoginFormValues) => {
+    loginMutate(values, {
+      onSuccess: (me) => {
+        toast.success(`${me.nickname}님, 환영합니다!`);
+        router.replace("/");
+      },
+      onError: (err) => {
+        if (err instanceof ApiError) {
+          toast.error(err.message);
+        } else {
+          toast.error("로그인 중 오류가 발생했습니다.");
+        }
+      },
+    });
   };
 
   return (
@@ -70,7 +64,7 @@ export default function LoginPage() {
         </CardHeader>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="flex flex-col gap-4 pb-4">
             {/* 이메일 */}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">이메일</Label>
@@ -103,8 +97,8 @@ export default function LoginPage() {
           </CardContent>
 
           <CardFooter className="flex flex-col gap-3">
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               로그인
             </Button>
             <p className="text-sm text-center text-muted-foreground">

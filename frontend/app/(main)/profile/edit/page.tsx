@@ -31,7 +31,7 @@ import { ApiError } from "@/types/api";
 
 export default function ProfileEditPage() {
   const router = useRouter();
-  const { isLoggedIn, nickname } = useAuthStore();
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const { data: me, isLoading } = useMe();
   const updateMe = useUpdateMe();
 
@@ -45,6 +45,10 @@ export default function ProfileEditPage() {
     defaultValues: { nickname: "", address: "" },
   });
 
+  useEffect(() => {
+    if (!isLoggedIn) router.replace("/login");
+  }, [isLoggedIn, router]);
+
   // 프로필 데이터 로드 후 폼 초기값 설정
   useEffect(() => {
     if (me) {
@@ -52,10 +56,7 @@ export default function ProfileEditPage() {
     }
   }, [me, reset]);
 
-  if (!isLoggedIn) {
-    router.replace("/login");
-    return null;
-  }
+  if (!isLoggedIn) return null;
 
   if (isLoading) {
     return <LoadingSpinner className="py-24" size="lg" />;
@@ -84,7 +85,7 @@ export default function ProfileEditPage() {
           {/* 아바타 */}
           <Avatar className="h-20 w-20 mb-2">
             <AvatarFallback className="text-3xl">
-              {(me?.nickname ?? nickname)?.[0]?.toUpperCase() ?? "U"}
+              {me?.nickname?.[0]?.toUpperCase() ?? "U"}
             </AvatarFallback>
           </Avatar>
           <CardTitle>프로필 수정</CardTitle>
