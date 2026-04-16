@@ -80,8 +80,9 @@ export default function ProfileEditPage() {
 
   return (
     <div className="flex flex-col gap-4 max-w-md mx-auto">
-      <BackButton label="마이페이지" />
-
+      <div className="self-start">
+        <BackButton label="마이페이지" />
+      </div>
       <Card>
         <CardHeader className="items-center">
           {/* 아바타 */}

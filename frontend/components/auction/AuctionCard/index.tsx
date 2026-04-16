@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { resolveImageUrl } from "@/lib/utils/resolveImageUrl";
 import { AuctionStatusBadge } from "@/components/auction/AuctionStatusBadge";
 import { PriceDisplay } from "@/components/common/PriceDisplay";
 import { CountdownTimer } from "@/components/common/CountdownTimer";
@@ -16,9 +17,9 @@ export function AuctionCard({ auction }: AuctionCardProps) {
       <div className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md">
         {/* 이미지 */}
         <div className="relative aspect-square w-full overflow-hidden bg-muted">
-          {auction.imageUrl ? (
+          {resolveImageUrl(auction.imageUrl) ? (
             <Image
-              src={auction.imageUrl}
+              src={resolveImageUrl(auction.imageUrl)!}
               alt={auction.title}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"

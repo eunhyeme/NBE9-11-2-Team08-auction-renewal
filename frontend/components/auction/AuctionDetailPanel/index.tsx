@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { resolveImageUrl } from "@/lib/utils/resolveImageUrl";
 import { AuctionStatusBadge } from "@/components/auction/AuctionStatusBadge";
 import { PriceDisplay } from "@/components/common/PriceDisplay";
 import { CountdownTimer } from "@/components/common/CountdownTimer";
@@ -16,9 +17,9 @@ export function AuctionDetailPanel({ auction }: AuctionDetailPanelProps) {
     <div className="flex flex-col gap-6 md:flex-row">
       {/* 이미지 */}
       <div className="relative aspect-square w-full max-w-sm shrink-0 overflow-hidden rounded-xl bg-muted md:w-80">
-        {auction.imageUrl ? (
+        {resolveImageUrl(auction.imageUrl) ? (
           <Image
-            src={auction.imageUrl}
+            src={resolveImageUrl(auction.imageUrl)!}
             alt={auction.title}
             fill
             className="object-cover"
