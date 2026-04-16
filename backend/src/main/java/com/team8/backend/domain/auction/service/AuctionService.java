@@ -6,6 +6,7 @@ import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.entity.AuctionStatus;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
+import com.team8.backend.domain.order.service.OrderService;
 import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.domain.user.repository.UserRepository;
 import com.team8.backend.global.exception.CustomException;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -26,6 +28,7 @@ public class AuctionService {
 
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
+    private final OrderService orderService;
 
     /**
      * 경매 목록 조회 (페이징)
@@ -168,5 +171,28 @@ public class AuctionService {
                 bidUnit,
                 newEndedAt
         );
+    }
+
+    // [스케줄러] 경매 마감 처리
+    @Transactional(propagation = Propagation.REQUIRES_NEW) // 각 경매 마감 처리를 독립적인 트랜잭션으로 실행
+    public void closeAuction(Long auctionId) {
+        // 존재하는 경매인지 확인 (락 사용)
+        Auction auction = auctionRepository.findByIdWithLock(auctionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
+        
+        // 이미 마감된 경매라면 종료해서 중복 주문 생성 방지
+        if (auction.getStatus() != AuctionStatus.ONGOING) {
+            return;
+        }
+        
+        // 낙찰자 존재 여부에 따라 낙찰(WON) or 유찰(UNSOLD)
+        auction.close();
+
+        // 낙찰된 경우 오더 생성
+        if (auction.getStatus() == AuctionStatus.WON) {
+            orderService.createOrder(auction, auction.getLastBidder(), auction.getCurrentPrice());
+        }
+
+        auctionRepository.save(auction);
     }
 }

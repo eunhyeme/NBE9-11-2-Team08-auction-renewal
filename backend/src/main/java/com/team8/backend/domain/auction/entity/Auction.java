@@ -54,8 +54,9 @@ public class Auction {
     private LocalDateTime endedAt;
 
     @Version
-    @Column(nullable = false)
-    private Long version;
+    @Builder.Default // 💡 빌더 사용 시에도 0L로 초기화해줍니다.
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -90,4 +91,18 @@ public class Auction {
     public void markUnsold() { this.status = AuctionStatus.UNSOLD; }
     public void cancel() { this.status = AuctionStatus.CANCELED; }
     public void softDelete(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+
+    public void close() {
+        // 이미 마감된 경우 상태 변경 방지
+        if (this.status != AuctionStatus.ONGOING || this.endedAt.isAfter(LocalDateTime.now())) {
+            return;
+        }
+
+        // 낙찰자 존재 여부에 따라 낙찰(WON) or 유찰(UNSOLD)
+        if (this.lastBidder != null) {
+            markWon();
+        } else {
+            markUnsold();
+        }
+    }
 }
