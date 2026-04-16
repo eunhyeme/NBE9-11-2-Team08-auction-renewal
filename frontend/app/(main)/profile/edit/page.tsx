@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { BackButton } from "@/components/common/BackButton";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { AddressInput } from "@/components/common/AddressInput";
 
 import {
   profileUpdateSchema,
@@ -37,6 +38,7 @@ export default function ProfileEditPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting, isDirty },
@@ -116,15 +118,18 @@ export default function ProfileEditPage() {
 
             {/* 주소 */}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="address">주소</Label>
-              <Input
-                id="address"
-                placeholder="배송지 주소"
-                {...register("address")}
+              <Label>주소</Label>
+              <Controller
+                control={control}
+                name="address"
+                render={({ field }) => (
+                  <AddressInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.address?.message}
+                  />
+                )}
               />
-              {errors.address && (
-                <p className="text-xs text-destructive">{errors.address.message}</p>
-              )}
             </div>
 
             <Button

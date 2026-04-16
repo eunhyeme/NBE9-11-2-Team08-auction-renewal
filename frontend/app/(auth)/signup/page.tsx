@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Gavel, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ import {
   type SignupFormValues,
 } from "@/lib/validations/userSchema";
 import { signup } from "@/lib/api/user";
+import { AddressInput } from "@/components/common/AddressInput";
 import { ApiError } from "@/types/api";
 
 export default function SignupPage() {
@@ -30,6 +31,7 @@ export default function SignupPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<SignupFormValues>({
@@ -111,16 +113,18 @@ export default function SignupPage() {
 
             {/* 주소 */}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="address">주소</Label>
-              <Input
-                id="address"
-                placeholder="배송지 주소"
-                autoComplete="street-address"
-                {...register("address")}
+              <Label>주소</Label>
+              <Controller
+                control={control}
+                name="address"
+                render={({ field }) => (
+                  <AddressInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={errors.address?.message}
+                  />
+                )}
               />
-              {errors.address && (
-                <p className="text-xs text-destructive">{errors.address.message}</p>
-              )}
             </div>
           </CardContent>
 
