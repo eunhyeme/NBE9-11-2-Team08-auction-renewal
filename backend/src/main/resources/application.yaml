@@ -9,6 +9,9 @@ springdoc:
   api-docs:
     enabled: false
 
+websocket:
+  max-connections-per-ip: 3
+
 custom:
   jwt:
     expireSeconds: 1800

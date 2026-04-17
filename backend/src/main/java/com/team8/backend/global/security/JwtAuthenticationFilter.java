@@ -32,6 +32,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
+        // WebSocket 제외
+        if (request.getServletPath().startsWith("/ws")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         String token = resolveToken(request);
 
         if (StringUtils.hasText(token)) {

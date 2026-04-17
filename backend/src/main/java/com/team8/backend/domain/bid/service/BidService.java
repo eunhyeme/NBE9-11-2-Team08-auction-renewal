@@ -51,7 +51,8 @@ public class BidService {
         Auction auction = auctionRepository.findById(request.auctionId())
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
 
-        User bidder = userRepository.getReferenceById(userId); //탈퇴나 id 변경기능 없고, lazy 적용
+        User bidder = userRepository.getReferenceById(userId);
+        //생성때마다 일일이 User를 쿼리하면 비효율적인데, 이왕 탈퇴나 id 변경기능 없으니 lazy 적용
 
         //1. 검증
         validateBid(auction, request,bidder);
