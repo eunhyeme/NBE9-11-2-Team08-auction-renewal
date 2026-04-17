@@ -7,6 +7,8 @@ import com.team8.backend.domain.auction.service.AuctionService;
 import com.team8.backend.global.exception.ErrorCode;
 import com.team8.backend.global.response.ApiResponse;
 import com.team8.backend.global.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +23,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -28,6 +31,7 @@ import java.util.Map;
 @RequestMapping("/api/auctions")
 public class AuctionController {
 
+    // 이 컨트롤러는 공개 경매 API와 판매자 전용 마이페이지 API를 함께 담당합니다.
     private final AuctionService auctionService;
 
     /**
@@ -48,6 +52,26 @@ public class AuctionController {
     @GetMapping("/{auctionId}")
     public ResponseEntity<ApiResponse<AuctionResponse>> getAuction(@PathVariable Long auctionId) {
         return ResponseEntity.ok(ApiResponse.success(auctionService.getAuction(auctionId)));
+    }
+
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<List<AuctionResponse>>> getMyAuctions(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        //이 API는 인증된 판매자 본인 기준으로 조회합니다.
+        return ResponseEntity.ok(ApiResponse.success(auctionService.getMyAuctions(userDetails.getUserId())));
+    }
+
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/me/{auctionId}")
+    public ResponseEntity<ApiResponse<AuctionResponse>> getMyAuction(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long auctionId
+    ) {
+        // 이 상세 조회 API는 두 조건을 모두 만족해야 합니다:
+        // 경매 ID가 일치하고, 현재 사용자가 해당 경매의 판매자여야 합니다.
+        return ResponseEntity.ok(ApiResponse.success(auctionService.getMyAuction(userDetails.getUserId(), auctionId)));
     }
 
     /**

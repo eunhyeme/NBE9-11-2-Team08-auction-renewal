@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +50,21 @@ public class AuctionService {
     public AuctionResponse getAuction(Long auctionId) {
         // Repository에서 DB 필터링이 완료된 메서드를 호출
         Auction auction = auctionRepository.findByAuctionIdAndDeletedAtIsNull(auctionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
+
+        return AuctionResponse.from(auction);
+    }
+
+    public List<AuctionResponse> getMyAuctions(Long userId) {
+        // 서비스에서 조회와 변환을 맡아 컨트롤러를 단순하게 유지합니다:
+        // 컨트롤러는 인증된 판매자 ID만 넘기고, 서비스가 엔티티를 응답 DTO로 변환합니다.
+        return auctionRepository.findAllBySeller_UserIdAndDeletedAtIsNullOrderByStartedAtDesc(userId).stream()
+                .map(AuctionResponse::from)
+                .toList();
+    }
+
+    public AuctionResponse getMyAuction(Long userId, Long auctionId) {
+        Auction auction = auctionRepository.findByAuctionIdAndSeller_UserIdAndDeletedAtIsNull(auctionId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
 
         return AuctionResponse.from(auction);

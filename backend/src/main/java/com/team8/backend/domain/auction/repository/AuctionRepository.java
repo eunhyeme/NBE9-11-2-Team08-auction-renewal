@@ -17,6 +17,12 @@ import java.util.Optional;
 public interface AuctionRepository extends JpaRepository<Auction, Long> {
     Page<Auction> findAllByDeletedAtIsNull(Pageable pageable);
 
+    // 판매자 기준으로 마이페이지 경매 이력을 조회하는 쿼리입니다.
+    List<Auction> findAllBySeller_UserIdAndDeletedAtIsNullOrderByStartedAtDesc(Long userId);
+
+    // 판매자 기준으로 마이페이지 경매 상세를 조회하는 쿼리입니다.
+    Optional<Auction> findByAuctionIdAndSeller_UserIdAndDeletedAtIsNull(Long auctionId, Long userId);
+
     Optional<Auction> findByAuctionIdAndDeletedAtIsNull(Long auctionId); // ID로 조회하되, deletedAt이 null인 경우만 반환
 
     // 상태가 ONGOING이고 종료 시간이 현재 시간 보다 이전인 경매 조회
