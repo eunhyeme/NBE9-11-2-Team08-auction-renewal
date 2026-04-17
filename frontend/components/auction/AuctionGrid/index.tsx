@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Pagination,
   PaginationContent,
@@ -16,9 +16,22 @@ import { useAuctions } from "@/lib/hooks/useAuctions";
 
 const PAGE_SIZE = 12;
 
-export function AuctionGrid() {
+interface AuctionGridProps {
+  keyword?: string;
+  sort?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  bluecheckOnly?: boolean;
+}
+
+export function AuctionGrid({ keyword, sort, minPrice, maxPrice, bluecheckOnly }: AuctionGridProps = {}) {
   const [page, setPage] = useState(0);
-  const { data, isLoading, isError } = useAuctions(page, PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(0);
+  }, [keyword, sort, minPrice, maxPrice, bluecheckOnly]);
+
+  const { data, isLoading, isError } = useAuctions(page, PAGE_SIZE, keyword, sort, minPrice, maxPrice, bluecheckOnly);
 
   if (isError) return <ErrorMessage message="경매 목록을 불러오는 데 실패했습니다." />;
 
