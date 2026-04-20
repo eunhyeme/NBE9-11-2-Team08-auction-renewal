@@ -42,3 +42,7 @@ out/
 .claude
 
 .env
+
+# Local uploads (이미지 파일 제외)
+uploads/*
+!uploads/.gitkeep

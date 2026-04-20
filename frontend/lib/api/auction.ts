@@ -113,3 +113,39 @@ export async function createAuction(data: AuctionFormValues): Promise<AuctionRes
     }
   }
 }
+
+/**
+ * 경매 상품 철회 (삭제)
+ * @param auctionId 철회할 경매의 ID
+ */
+export async function deleteAuction(auctionId: number): Promise<void> {
+  const token = tokenManager.get();
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+
+  try {
+    const res = await fetch(`${baseUrl}/api/auctions/${auctionId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      let errorMessage = "경매 철회에 실패했습니다.";
+      try {
+        const errorResult = await res.json();
+        errorMessage = errorResult.message || errorMessage;
+      } catch (e) {
+        // JSON 파싱 실패 시 기본 메시지 유지
+      }
+      throw new Error(errorMessage);
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error("경매 철회 중 예상치 못한 오류가 발생했습니다.");
+    }
+  }
+}

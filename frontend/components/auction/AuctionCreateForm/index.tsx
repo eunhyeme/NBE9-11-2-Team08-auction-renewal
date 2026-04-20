@@ -38,7 +38,7 @@ export function AuctionCreateForm() {
     try {
       const result = await server_createAuction(data);
       // 💡 alert 대신 toast.success 사용!
-      toast.success("경매가 성공적으로 상장되었습니다!");
+      toast.success("경매가 성공적으로 등록되었습니다!");
       router.push(`/auctions/${result.auctionId}`);
     } catch (err) {
       // 💡 에러 메시지도 toast.error로 깔끔하게 전달
