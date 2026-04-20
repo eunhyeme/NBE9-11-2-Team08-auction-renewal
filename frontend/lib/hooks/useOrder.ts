@@ -1,5 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getOrder, payOrder, updateShipping, registerTracking } from "@/lib/api/order";
+import {
+  getOrder,
+  getMyOrders,
+  payOrder,
+  updateShipping,
+  registerTracking,
+  type OrderHistoryFilter,
+  type OrderHistoryRole,
+} from "@/lib/api/order";
 import { MOCK_ORDERS } from "@/lib/mocks/data";
 
 
@@ -15,6 +23,20 @@ export function useOrder(orderId: number) {
           )
       : () => getOrder(orderId),
     enabled: !!orderId,
+  });
+}
+
+export function useMyOrders(
+  role: OrderHistoryRole,
+  filter: OrderHistoryFilter,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["myOrders", role, filter],
+    queryFn: USE_MOCK
+      ? () => Promise.resolve(MOCK_ORDERS)
+      : () => getMyOrders(role, filter),
+    enabled,
   });
 }
 

@@ -63,7 +63,7 @@ async function fetchWithAuth(
   const response = await fetch(`${BASE_URL}${url}`, buildInit(token));
 
   if (response.status === 401) {
-    // 토큰 만료 → 강제 갱신 후 1회 재시도
+    // 토큰 만료 시 강제 갱신 후 1회 재시도
     tokenManager.clear();
     const newToken = await doRefresh();
     if (!newToken) {
@@ -109,6 +109,11 @@ export const apiFetch = {
 
   put: <T>(url: string, body?: unknown, options?: Omit<FetchOptions, "method">) =>
     fetchWithAuth(url, { ...options, method: "PUT", body }).then((r) =>
+      handleResponse<T>(r),
+    ),
+
+  patch: <T>(url: string, body?: unknown, options?: Omit<FetchOptions, "method">) =>
+    fetchWithAuth(url, { ...options, method: "PATCH", body }).then((r) =>
       handleResponse<T>(r),
     ),
 

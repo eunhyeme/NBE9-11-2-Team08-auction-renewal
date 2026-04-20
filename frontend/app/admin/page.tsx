@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 
+import { buttonVariants } from "@/components/ui/button";
 import { MembershipApplicationRow } from "@/components/admin/MembershipApplicationRow";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ErrorMessage } from "@/components/common/ErrorMessage";
 import { EmptyState } from "@/components/common/EmptyState";
+import { cn } from "@/lib/utils";
 import {
   useMembershipApplications,
   useApproveMembership,
@@ -36,10 +39,16 @@ export default function AdminPage() {
     }
   };
 
-  const handleReject = async (id: number) => {
+  const handleReject = async (id: number, reason: string) => {
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      toast.error("거절 사유를 입력해주세요.");
+      return;
+    }
+
     setActionId(id);
     try {
-      await rejectMutation.mutateAsync(id);
+      await rejectMutation.mutateAsync({ id, reason: trimmedReason });
       toast.success("인증 신청을 거절했습니다.");
     } catch (err) {
       if (err instanceof ApiError) {
@@ -66,11 +75,19 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold">판매자 인증 신청</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          신청을 검토하고 승인 또는 거절해 주세요.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">판매자 인증 신청</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            신청을 검토하고 승인 또는 거절해 주세요.
+          </p>
+        </div>
+        <Link
+          href="/profile"
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "self-start")}
+        >
+          마이페이지로 돌아가기
+        </Link>
       </div>
 
       {!applications?.length ? (

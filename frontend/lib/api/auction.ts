@@ -21,7 +21,7 @@ export async function getAuctions(
     size: String(size),
     sort,
   });
-  
+
   if (keyword) params.set("keyword", keyword);
   if (minPrice !== undefined) params.set("minPrice", String(minPrice));
   if (maxPrice !== undefined) params.set("maxPrice", String(maxPrice));
@@ -41,15 +41,29 @@ export async function getAuction(auctionId: number): Promise<AuctionResponse> {
   return res.result;
 }
 
+export async function getMyAuctions(): Promise<AuctionResponse[]> {
+  const res = await apiFetch.get<ApiResponse<AuctionResponse[]>>(
+    "/api/auctions/me",
+  );
+  return res.result;
+}
+
+export async function getMyAuction(auctionId: number): Promise<AuctionResponse> {
+  const res = await apiFetch.get<ApiResponse<AuctionResponse>>(
+    `/api/auctions/me/${auctionId}`,
+  );
+  return res.result;
+}
+
 /**
  * 경매 등록 (시니어 리뷰 반영: 에러 핸들링 및 시간 검증 최적화)
  */
 export async function createAuction(data: AuctionFormValues): Promise<AuctionResponse> {
   const formData = new FormData();
-  
+
   // 1. 시간 설정 (기존 우량 로직 유지)
   const now = new Date();
-  const startedAt = new Date(now.getTime() + 60 * 1000); 
+  const startedAt = new Date(now.getTime() + 60 * 1000);
   startedAt.setSeconds(0);
   startedAt.setMilliseconds(0);
 

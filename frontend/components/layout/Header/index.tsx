@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Gavel, User, LogOut, Settings } from "lucide-react";
+import { Gavel, User, LogOut, Settings, ShieldCheck } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 export function Header() {
   const router = useRouter();
-  const { isLoggedIn, nickname, hasBluecheck } = useAuthStore();
+  const { isLoggedIn, nickname, hasBluecheck, role } = useAuthStore();
   const logoutAction = useAuthStore((s) => s.logout);
 
   const handleLogout = async () => {
@@ -79,6 +79,15 @@ export function Header() {
                   <Settings className="h-4 w-4" />
                   프로필 수정
                 </DropdownMenuItem>
+                {role === "ROLE_ADMIN" && (
+                  <DropdownMenuItem
+                    className="flex items-center gap-2"
+                    onClick={() => router.push("/admin")}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    관리자 페이지
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive flex items-center gap-2"

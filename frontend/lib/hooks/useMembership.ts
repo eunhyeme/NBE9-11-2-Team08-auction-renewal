@@ -22,7 +22,11 @@ export function useApplyMembership() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: USE_MOCK
-      ? () => Promise.resolve(MOCK_MEMBERSHIP_APPLICATIONS[0])
+      ? () =>
+          Promise.resolve({
+            applicationId: MOCK_MEMBERSHIP_APPLICATIONS[0].id,
+            message: "판매자 인증 신청이 완료되었습니다.",
+          })
       : applyMembership,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["me"] });
@@ -46,8 +50,9 @@ export function useRejectMembership() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: USE_MOCK
-      ? (_: number) => Promise.resolve()
-      : (id: number) => rejectMembership(id),
+      ? (_: { id: number; reason: string }) => Promise.resolve()
+      : ({ id, reason }: { id: number; reason: string }) =>
+          rejectMembership(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["membershipApplications"] });
     },
