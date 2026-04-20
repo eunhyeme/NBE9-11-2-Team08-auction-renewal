@@ -6,6 +6,8 @@ import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.entity.AuctionStatus;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
+import com.team8.backend.domain.auction.repository.AuctionSpecification;
+import org.springframework.data.jpa.domain.Specification;
 import com.team8.backend.domain.order.service.OrderService;
 import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.domain.user.repository.UserRepository;
@@ -36,12 +38,22 @@ public class AuctionService {
      * 경매 목록 조회 (페이징)
      * 비인증 사용자도 접근 가능한 비즈니스 로직
      */
-    public Page<AuctionResponse> getAuctions(Pageable pageable) {
-        // 1. 삭제되지 않은 경매 목록 페이징 조회
-        Page<Auction> auctions = auctionRepository.findAllByDeletedAtIsNull(pageable);
-
-        // 2. Entity -> DTO 변환
-        return auctions.map(AuctionResponse::from);
+    public Page<AuctionResponse> getAuctions(
+            Pageable pageable, String keyword, Long minPrice, Long maxPrice, Boolean bluecheckOnly) {
+        Specification<Auction> spec = AuctionSpecification.notDeleted();
+        if (keyword != null && !keyword.isBlank()) {
+            spec = spec.and(AuctionSpecification.titleContains(keyword));
+        }
+        if (minPrice != null) {
+            spec = spec.and(AuctionSpecification.minPrice(minPrice));
+        }
+        if (maxPrice != null) {
+            spec = spec.and(AuctionSpecification.maxPrice(maxPrice));
+        }
+        if (Boolean.TRUE.equals(bluecheckOnly)) {
+            spec = spec.and(AuctionSpecification.bluecheckOnly());
+        }
+        return auctionRepository.findAll(spec, pageable).map(AuctionResponse::from);
     }
 
     /**

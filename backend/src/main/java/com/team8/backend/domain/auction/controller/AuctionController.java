@@ -40,9 +40,14 @@ public class AuctionController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Page<AuctionResponse>>> getAuctions(
-            @PageableDefault(size = 10, sort = "startedAt", direction = Sort.Direction.DESC) Pageable pageable
+            @PageableDefault(size = 10, sort = "startedAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long minPrice,
+            @RequestParam(required = false) Long maxPrice,
+            @RequestParam(required = false, defaultValue = "false") Boolean bluecheckOnly
     ) {
-        return ResponseEntity.ok(ApiResponse.success(auctionService.getAuctions(pageable)));
+        return ResponseEntity.ok(ApiResponse.success(
+                auctionService.getAuctions(pageable, keyword, minPrice, maxPrice, bluecheckOnly)));
     }
 
     /**
