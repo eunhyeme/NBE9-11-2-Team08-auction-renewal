@@ -15,14 +15,15 @@ export function AuctionCard({ auction }: AuctionCardProps) {
   return (
     <Link href={`/auctions/${auction.auctionId}`}>
       <div className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md">
-        {/* 이미지 */}
-        <div className="relative aspect-square w-full overflow-hidden bg-muted">
+        {/* 이미지 컨테이너: 배경을 bg-white로 설정 */}
+        <div className="relative aspect-square w-full overflow-hidden bg-white flex items-center justify-center">
           {resolveImageUrl(auction.imageUrl) ? (
             <Image
               src={resolveImageUrl(auction.imageUrl)!}
               alt={auction.title}
               fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              // 💡 object-cover를 object-contain으로 변경하여 전체 이미지가 노출되도록 수정
+              className="object-contain transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-muted-foreground text-xs">

@@ -55,14 +55,18 @@ export default function AuctionEditForm({ auction }: AuctionEditFormProps) {
       <div className="flex flex-col gap-2">
         <Label>상품 이미지 (변경 시에만 업로드)</Label>
         <div 
-          className="w-full h-48 border-2 border-dashed border-[var(--color-brand-500)] rounded-lg flex items-center justify-center overflow-hidden cursor-pointer bg-muted/30"
-          onClick={() => document.getElementById("image-upload")?.click()}
+        className="w-full h-48 border-2 border-dashed border-[var(--color-brand-500)] rounded-lg flex items-center justify-center overflow-hidden cursor-pointer bg-white" // 💡 bg-white 추가
+        onClick={() => document.getElementById("image-upload")?.click()}
         >
-          {preview ? (
-            <img src={preview} alt="미리보기" className="w-full h-full object-cover" />
-          ) : (
+        {preview ? (
+            <img 
+            src={preview} 
+            alt="미리보기" 
+            className="w-full h-full object-contain" // 💡 object-contain 적용
+            />
+        ) : (
             <span className="text-[var(--color-brand-600)]">클릭하여 이미지 업로드</span>
-          )}
+        )}
         </div>
         <input
           id="image-upload"

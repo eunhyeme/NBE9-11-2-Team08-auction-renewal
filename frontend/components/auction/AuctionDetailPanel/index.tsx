@@ -16,13 +16,13 @@ export function AuctionDetailPanel({ auction }: AuctionDetailPanelProps) {
   return (
     <div className="flex flex-col gap-6 md:flex-row">
       {/* 이미지 */}
-      <div className="relative aspect-square w-full max-w-sm shrink-0 overflow-hidden rounded-xl bg-muted md:w-80">
+      <div className="relative aspect-square w-full max-w-sm shrink-0 overflow-hidden rounded-xl bg-white md:w-80">
         {resolveImageUrl(auction.imageUrl) ? (
           <Image
             src={resolveImageUrl(auction.imageUrl)!}
             alt={auction.title}
             fill
-            className="object-cover"
+            className="object-contain"
             priority
           />
         ) : (
