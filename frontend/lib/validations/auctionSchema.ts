@@ -1,17 +1,23 @@
 import { z } from "zod";
 
-export const auctionCreateSchema = z.object({
-  title: z.string().min(2, { error: "제목은 2자 이상이어야 합니다." }),
-  description: z.string().optional(),
-  imageUrl: z.string().url({ error: "유효한 이미지 URL을 입력해 주세요." }).optional().or(z.literal("")),
+export const auctionSchema = z.object({
+  title: z.string().min(1, { message: "제목을 입력해 주세요." }),
+  description: z.string().min(1, { message: "상세 설명을 입력해 주세요." }),
   startPrice: z.coerce
-    .number()
-    .min(1000, { error: "시작가는 1,000원 이상이어야 합니다." }),
+    .number({ error: "숫자를 입력해 주세요." })
+    .min(0, { message: "시작가는 0원 이상이어야 합니다." }),
   bidUnit: z.coerce
-    .number()
-    .min(100, { error: "입찰 단위는 100원 이상이어야 합니다." }),
-  startedAt: z.string().min(1, { error: "시작 시간을 선택해 주세요." }),
-  endedAt: z.string().min(1, { error: "종료 시간을 선택해 주세요." }),
+    .number({ error: "숫자를 입력해 주세요." })
+    .min(100, { message: "입찰 단위는 최소 100원 이상입니다." })
+    .refine((val) => val % 100 === 0, { 
+      message: "입찰 단위는 100원 단위로 입력해 주세요." 
+    }),
+  duration: z.coerce
+    .number({ error: "숫자를 입력해 주세요." })
+    .min(1, { message: "최소 1일 이상 설정해야 합니다." })
+    .max(10, { message: "최대 10일까지 설정 가능합니다." }),
+  // 💡 기존 z.any()에서 z.instanceof(File)로 변경
+  image: z.instanceof(File, { message: "이미지 파일을 업로드해 주세요." }),
 });
 
-export type AuctionCreateFormValues = z.infer<typeof auctionCreateSchema>;
+export type AuctionFormValues = z.infer<typeof auctionSchema>;
