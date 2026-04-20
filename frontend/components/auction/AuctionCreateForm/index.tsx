@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner"; // 💡 toast 임포트 추가
+import { toast } from "sonner";
 
 export function AuctionCreateForm() {
   const router = useRouter();
@@ -23,10 +23,11 @@ export function AuctionCreateForm() {
     handleSubmit,
     watch,
     setValue,
+    setError,      // 💡 수동 에러 설정을 위해 추가
+    clearErrors,   // 💡 에러 해제를 위해 추가
     formState: { errors },
   } = useForm<AuctionFormValues>({
     resolver: zodResolver(auctionSchema) as any,
-    // startPrice와 bidUnit을 초기값에서 제외하거나 undefined로 설정하여 placeholder가 보이게 합니다
     defaultValues: { 
       title: "",
       description: "",
@@ -35,20 +36,24 @@ export function AuctionCreateForm() {
   });
 
   const onSubmit = async (data: AuctionFormValues) => {
+    // 💡 등록 시에는 이미지가 필수이므로 수동 검증 진행
+    if (!data.image) {
+      setError("image", { type: "manual", message: "이미지 파일을 업로드해 주세요." });
+      return;
+    }
+
     try {
       const result = await server_createAuction(data);
-      // 💡 alert 대신 toast.success 사용!
       toast.success("경매가 성공적으로 등록되었습니다!");
       router.push(`/auctions/${result.auctionId}`);
     } catch (err) {
-      // 💡 에러 메시지도 toast.error로 깔끔하게 전달
       const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.";
       toast.error(`경매 등록 실패: ${errorMessage}`);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-xl mx-auto"noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6 max-w-xl mx-auto" noValidate>
       {/* 이미지 미리보기 구역 */}
       <div className="flex flex-col gap-2">
         <Label>상품 이미지</Label>
@@ -72,59 +77,51 @@ export function AuctionCreateForm() {
             if (file) {
               setValue("image", file);
               setPreview(URL.createObjectURL(file));
+              clearErrors("image"); // 💡 이미지 선택 시 즉시 에러 메시지 제거
             }
           }}
         />
-        {errors.image && <p className="text-xs text-[var(--color-auction-canceled-text)]">{errors.image.message as string}</p>}
+        {/* 💡 에러 메시지 표시 */}
+        {errors.image && (
+          <p className="text-xs text-[var(--color-auction-canceled-text)]">
+            {errors.image.message as string}
+          </p>
+        )}
       </div>
 
-      {/* 기본 정보 */}
+      {/* ... 이하 기존 필드들 동일 */}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="title">경매 제목</Label>
         <Input id="title" {...register("title")} placeholder="경매의 제목을 입력하세요" />
         {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
       </div>
 
-      {/* 가격 및 단위 설정 구역 */}
       <div className="grid grid-cols-2 gap-4">
-        {/* 시작가 */}
         <div className="flex flex-col gap-1.5">
           <Label>시작가 (<PriceDisplay amount={watch("startPrice") || 0} />)</Label>
           <Input 
             type="number" 
             {...register("startPrice")} 
-            placeholder="0" // 흐릿하게 0 표시
+            placeholder="0"
             className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
 
-        {/* 입찰 단위 */}
         <div className="flex flex-col gap-1.5">
           <Label>입찰 단위 (<PriceDisplay amount={watch("bidUnit") || 0} />)</Label>
           <Input 
             type="number" 
             step="100" 
-            min="100" // 💡 최소값을 100으로 설정하여 그 미만으로 내려가지 않게 함
             {...register("bidUnit")} 
             placeholder="100" 
           />
-          {errors.bidUnit && (
-            <p className="text-xs text-destructive">
-              {errors.bidUnit.message as string}
-            </p>
-          )}
+          {errors.bidUnit && <p className="text-xs text-destructive">{errors.bidUnit.message as string}</p>}
         </div>
       </div>
 
-      {/* 경매 기간 부분 */}
       <div className="flex flex-col gap-1.5">
         <Label>경매 기간 (1~10일)</Label>
-        <Input 
-          type="number" 
-          min="1" // 💡 최소값을 1로 설정하여 0이나 마이너스가 되지 않게 함
-          max="10" // 팀 규칙에 따라 최대값도 10으로 설정
-          {...register("duration")} 
-        />
+        <Input type="number" min="1" max="10" {...register("duration")} />
         {errors.duration && <p className="text-xs text-destructive">{errors.duration.message}</p>}
       </div>
 

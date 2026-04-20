@@ -73,7 +73,11 @@ export async function createAuction(data: AuctionFormValues): Promise<AuctionRes
     "request",
     new Blob([JSON.stringify(requestDto)], { type: "application/json" })
   );
-  formData.append("image", data.image);
+
+  // data.image가 있을 때만 append 하도록 체크
+  if (data.image) {
+    formData.append("image", data.image);
+  }
 
   const token = tokenManager.get();
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
@@ -147,5 +151,58 @@ export async function deleteAuction(auctionId: number): Promise<void> {
     } else {
       throw new Error("경매 철회 중 예상치 못한 오류가 발생했습니다.");
     }
+  }
+}
+
+/**
+ * 경매 상품 수정 (PATCH)
+ */
+export async function updateAuction(
+  auctionId: number, 
+  data: Partial<AuctionFormValues>
+): Promise<AuctionResponse> {
+  const formData = new FormData();
+  
+  // 1. 수정 데이터 구성 (Partial 타입이므로 값이 있는 경우만 보냄)
+  const requestDto: any = {
+    title: data.title,
+    description: data.description,
+    durationInDays: data.duration,
+    startPrice: data.startPrice,
+    bidUnit: data.bidUnit
+  };
+
+  formData.append(
+    "request",
+    new Blob([JSON.stringify(requestDto)], { type: "application/json" })
+  );
+
+  // 💡 2. 이미지가 새로 선택된 경우에만 추가 (타입 에러 방지 및 로직 최적화)
+  if (data.image) {
+    formData.append("image", data.image);
+  }
+
+  const token = tokenManager.get();
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+
+  try {
+    const res = await fetch(`${baseUrl}/api/auctions/${auctionId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errorResult: ApiResponse<any> = await res.json();
+      throw new Error(errorResult.message || "경매 수정에 실패했습니다.");
+    }
+
+    const result: ApiResponse<AuctionResponse> = await res.json();
+    return result.result;
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error("경매 수정 중 예상치 못한 오류가 발생했습니다.");
   }
 }

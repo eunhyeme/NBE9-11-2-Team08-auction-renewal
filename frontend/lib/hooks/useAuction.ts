@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAuction, createAuction, deleteAuction } from "@/lib/api/auction";
+import { getAuction, createAuction, deleteAuction, updateAuction } from "@/lib/api/auction";
 import { MOCK_AUCTIONS } from "@/lib/mocks/data";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { AuctionFormValues } from "../validations/auctionSchema";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 /**
- * 경매 상세 조회 훅 (기존 기능 복구)
+ * 경매 상세 조회 훅
  */
 export function useAuction(auctionId: number) {
   return useQuery({
@@ -24,7 +25,8 @@ export function useAuction(auctionId: number) {
 }
 
 /**
- * 경매 등록 훅 (신규 기능)
+ * 경매 등록 훅
+ * (등록 성공 시 상세 페이지 이동은 컴포넌트에서 결과 ID를 받아 처리하므로 invalidate만 수행)
  */
 export function useCreateAuction() {
   const queryClient = useQueryClient();
@@ -32,7 +34,6 @@ export function useCreateAuction() {
   return useMutation({
     mutationFn: createAuction,
     onSuccess: () => {
-      // 등록 성공 시 경매 목록 데이터를 무효화하여 최신화
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
     },
   });
@@ -43,23 +44,45 @@ export function useCreateAuction() {
  */
 export function useDeleteAuction() {
   const queryClient = useQueryClient();
-  const router = useRouter(); // 라우터 객체 생성
+  const router = useRouter();
 
   return useMutation({
     mutationFn: (auctionId: number) => deleteAuction(auctionId),
     onSuccess: () => {
-      // 1. 성공 메시지 출력
-      toast.success("삭제가 완료되었습니다.");
-      
-      // 2. 경매 목록 캐시 무효화 (메인 페이지 갔을 때 최신 상태를 보여주기 위함)
+      toast.success("경매가 철회되었습니다.");
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
-      
-      // 3. 메인 페이지로 이동 (404 방지)
       router.push("/");
     },
     onError: (error: Error) => {
-      // 백엔드에서 보낸 구체적인 에러 메시지(예: "입찰자가 있어 철회 불가")를 보여줌
       toast.error(error.message);
+    },
+  });
+}
+
+/**
+ * 경매 수정 커스텀 훅 (안전성 강화 버전)
+ */
+export function useUpdateAuction() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: ({ auctionId, data }: { auctionId: number; data: AuctionFormValues }) => 
+      updateAuction(auctionId, data),
+    
+    onSuccess: (_, variables) => {
+      // 💡 변수(variables)에 담긴 ID를 직접 꺼내 씁니다. 이게 제일 확실합니다.
+      const id = variables.auctionId;
+      
+      toast.success("경매 정보가 성공적으로 수정되었습니다.");
+      queryClient.invalidateQueries({ queryKey: ["auction", id] });
+      queryClient.invalidateQueries({ queryKey: ["auctions"] });
+      
+      // 💡 여기서 바로 이동!
+      router.push(`/auctions/${id}`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "수정 중 오류가 발생했습니다.");
     },
   });
 }

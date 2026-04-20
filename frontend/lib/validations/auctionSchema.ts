@@ -16,8 +16,8 @@ export const auctionSchema = z.object({
     .number({ error: "숫자를 입력해 주세요." })
     .min(1, { message: "최소 1일 이상 설정해야 합니다." })
     .max(10, { message: "최대 10일까지 설정 가능합니다." }),
-  // 💡 기존 z.any()에서 z.instanceof(File)로 변경
-  image: z.instanceof(File, { message: "이미지 파일을 업로드해 주세요." }),
+  // 💡 .optional()을 추가하여 수정을 위해 선택 사항으로 변경합니다.
+  image: z.any().optional(),
 });
 
 export type AuctionFormValues = z.infer<typeof auctionSchema>;
