@@ -29,7 +29,7 @@ public class AuctionScheduler {
         List<Auction> expiredAuctions = auctionRepository.findByStatusAndEndedAtBeforeAndDeletedAtIsNull(
                 AuctionStatus.ONGOING, now
         );
-
+        //  벌크로 가져온 뒤 for 단건 처리 x
 
         expiredAuctions.forEach(auction -> {
             int maxRetries = 3;

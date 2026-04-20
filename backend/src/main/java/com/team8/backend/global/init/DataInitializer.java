@@ -55,7 +55,7 @@ public class DataInitializer implements ApplicationRunner {
         userRepository.save(admin);
 
         // ── AUCTIONS ───────────────────────────────────────────
-        // 1. 진행중
+        // 1. 바로 낙찰됨
         Auction auction1 = Auction.builder()
                 .seller(seller1)
                 .title("아이폰 14")
@@ -127,6 +127,24 @@ public class DataInitializer implements ApplicationRunner {
                 .build();
         auctionRepository.save(auction4);
 
+        // 5. 입찰이 진행 중인 새로운 경매 
+        Auction auction5 = Auction.builder()
+                .seller(seller2) // 중고천재가 판매
+                .title("아이패드 에어 5세대")
+                .imageUrl("/uploads/img5.jpg")
+                .description("거의 안 썼어요. 풀박스입니다.")
+                .startPrice(700000L)
+                .currentPrice(750000L)
+                .lastBidder(buyer1) // 입찰러A가 최고가 입찰 중
+                .bidUnit(10000)
+                .status(AuctionStatus.ONGOING)
+                .startedAt(LocalDateTime.of(2026, 4, 15, 10, 0))
+                .endedAt(LocalDateTime.of(2026, 4, 28, 10, 0)) // 28일 마감 (넉넉한 기한)
+                .version(1L)
+                .deletedAt(null)
+                .build();
+        auctionRepository.save(auction5);
+
         // ── BIDS ───────────────────────────────────────────────
         bidRepository.save(new Bid(buyer1, auction1, 510000L, LocalDateTime.of(2026, 4, 10, 11, 0)));
         bidRepository.save(new Bid(buyer2, auction1, 600000L, LocalDateTime.of(2026, 4, 10, 12, 0)));
@@ -140,7 +158,7 @@ public class DataInitializer implements ApplicationRunner {
         // 1. 정상 결제 + 배송 완료
         Order order1 = new Order(
                 auction2, buyer2, seller1,
-                1300000L,
+                1300000L,buyer2.getAddress(),
                 LocalDateTime.of(2026, 3, 6, 10, 0)
         );
         order1.pay(LocalDateTime.of(2026, 3, 5, 11, 0));
@@ -149,12 +167,13 @@ public class DataInitializer implements ApplicationRunner {
         order1.completeDelivery();
         orderRepository.save(order1);
 
-        // 2. 결제 대기 중
-        Order order2 = new Order(
+        // 2. 결제 대기 중 (auction1 자동 생성 됨)
+        // 여기서 수동으로 Order를 생성하면 auction1 하나로 2개의 Order가 생성되려 해서 에러 발생
+/*        Order order2 = new Order(
                 auction1, buyer1, seller1,
-                650000L,
+                650000L,buyer1.getAddress(),
                 LocalDateTime.of(2026, 4, 21, 10, 0)
         );
-        orderRepository.save(order2);
+        orderRepository.save(order2);*/
     }
 }

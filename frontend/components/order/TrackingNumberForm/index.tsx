@@ -41,6 +41,10 @@ export function TrackingNumberForm({ onSubmit }: TrackingNumberFormProps) {
     formState: { errors, isSubmitting },
   } = useForm<TrackingFormValues>({
     resolver: zodResolver(trackingSchema),
+    defaultValues: {
+    carrier: "", 
+    trackingNumber: "",
+  },
   });
 
   return (

@@ -5,6 +5,7 @@ import com.team8.backend.domain.order.dto.request.OrderTrackingRequest;
 import com.team8.backend.domain.order.dto.response.OrderResponse;
 import com.team8.backend.domain.order.entity.OrderFilter;
 import com.team8.backend.domain.order.entity.OrderHistoryRole;
+import com.team8.backend.domain.order.facade.OrderFacade;
 import com.team8.backend.domain.order.service.OrderService;
 import com.team8.backend.global.response.ApiResponse;
 import com.team8.backend.global.security.CustomUserDetails;
@@ -23,13 +24,14 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderFacade orderFacade;
 
     // [참여자] 주문 상세 조회 /api/orders/{orderId}
     @GetMapping("/{orderId}")
     public ApiResponse<OrderResponse> getOrder(
             @PathVariable Long orderId,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        return ApiResponse.success(orderService.getOrder(orderId, userDetails.getUserId()));
+        return ApiResponse.success(orderFacade.getOrder(orderId, userDetails.getUserId()));
     }
 
     // [구매자] 배송 정보 입력 /api/orders/{orderId}/shipping
@@ -38,7 +40,7 @@ public class OrderController {
             @PathVariable Long orderId,
             @Valid @RequestBody OrderAddressRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        orderService.updateAddress(orderId, request, userDetails.getUserId());
+        orderFacade.updateAddress(orderId, request, userDetails.getUserId());
         return ApiResponse.success(null);
     }
 
@@ -47,7 +49,7 @@ public class OrderController {
     public ApiResponse<Void> payOrder(
             @PathVariable Long orderId,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        orderService.payOrder(orderId, userDetails.getUserId());
+        orderFacade.payOrder(orderId, userDetails.getUserId());
         return ApiResponse.success(null);
     }
 
@@ -57,7 +59,7 @@ public class OrderController {
             @PathVariable Long orderId,
             @Valid @RequestBody OrderTrackingRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        orderService.registerTracking(orderId, request, userDetails.getUserId());
+        orderFacade.registerTracking(orderId, request, userDetails.getUserId());
         return ApiResponse.success(null);
     }
 

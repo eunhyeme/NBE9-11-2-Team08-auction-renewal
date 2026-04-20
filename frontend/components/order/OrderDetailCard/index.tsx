@@ -32,12 +32,14 @@ export function OrderDetailCard({ order, auctionTitle }: OrderDetailCardProps) {
 
       {/* 날짜 정보 */}
       <div className="flex flex-col gap-1.5 text-sm">
+        {/* 주문일 (항상 표시) */}
         <div className="flex justify-between">
           <span className="text-muted-foreground">주문일</span>
           <span>{formatDate(order.createdAt)}</span>
         </div>
 
-        {order.status === "AWAITING_PAYMENT" && (
+        {/* 결제 기한 (결제 대기 중일 때만 표시) */}
+        {order.status === "AWAITING_PAYMENT" && order.paymentDeadline && (
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">결제 기한</span>
             <div className="flex items-center gap-1.5">
@@ -49,10 +51,24 @@ export function OrderDetailCard({ order, auctionTitle }: OrderDetailCardProps) {
           </div>
         )}
 
+        {/* 결제일 (결제 완료 시 표시) */}
         {order.paidAt && (
           <div className="flex justify-between">
             <span className="text-muted-foreground">결제일</span>
             <span>{formatDate(order.paidAt)}</span>
+          </div>
+        )}
+
+        {/* 발송 기한 (결제 완료 후 발송 전일 때 표시) */}
+        {order.paidAt && order.deliveryDeadline && !order.trackingNumber && (
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">발송 기한</span>
+            <div className="flex items-center gap-1.5">
+              <CountdownTimer endedAt={order.deliveryDeadline} />
+              <span className="text-xs text-muted-foreground">
+                ({formatDate(order.deliveryDeadline)})
+              </span>
+            </div>
           </div>
         )}
       </div>

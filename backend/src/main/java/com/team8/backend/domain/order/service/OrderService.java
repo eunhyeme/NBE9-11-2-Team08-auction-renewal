@@ -1,8 +1,6 @@
 package com.team8.backend.domain.order.service;
 
 import com.team8.backend.domain.auction.entity.Auction;
-import com.team8.backend.domain.order.dto.request.OrderAddressRequest;
-import com.team8.backend.domain.order.dto.request.OrderTrackingRequest;
 import com.team8.backend.domain.order.dto.response.OrderResponse;
 import com.team8.backend.domain.order.entity.Order;
 import com.team8.backend.domain.order.entity.OrderFilter;
@@ -10,6 +8,8 @@ import com.team8.backend.domain.order.entity.OrderHistoryRole;
 import com.team8.backend.domain.order.entity.OrderStatus;
 import com.team8.backend.domain.order.repository.OrderRepository;
 import com.team8.backend.domain.user.entity.User;
+import com.team8.backend.global.exception.CustomException;
+import com.team8.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -24,8 +24,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class OrderService {
-
     private final OrderRepository orderRepository;
+    
     private static final Set<OrderStatus> ONGOING_STATUSES =
             EnumSet.of(OrderStatus.AWAITING_PAYMENT, OrderStatus.PAID, OrderStatus.DELIVERING);
     private static final Set<OrderStatus> COMPLETED_STATUSES =
@@ -34,54 +34,45 @@ public class OrderService {
     // 경매 낙찰 시 주문 생성
     @Transactional
     public void createOrder(Auction auction, User bidder, Long finalPrice) {
-        orderRepository.save(
-                new Order(
-                        auction,
-                        bidder,
-                        auction.getSeller(),
-                        finalPrice,
-                        LocalDateTime.now()));
+        orderRepository.save(Order.builder()
+                .auction(auction)
+                .bidder(bidder)
+                .seller(auction.getSeller())
+                .finalPrice(finalPrice)
+                .shippingAddress(bidder.getAddress())
+                .createdAt(LocalDateTime.now())
+                .build());
+    }
+    
+    // 공통 조회 로직
+    public Order getOrderOrThrow(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+    }
+    
+    // 낙관성 락을 적용한 조회 로직
+    public Order getOrderWithLockOrThrow(Long orderId) {
+        return orderRepository.findByIdWithLock(orderId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
     }
 
-    // [참여자] 주문 상세 조회
-    public OrderResponse getOrder(Long orderId, Long userId) {
-        Order order = orderRepository.getOrThrow(orderId);
-        order.validateParticipant(userId);
-        return OrderResponse.from(order);
-    }
-
-    // [구매자] 배송지 등록/수정
+    // [구매자] 결제 처리 (AWAITING_PAYMENT -> PAID) 
     @Transactional
-    public void updateAddress(Long orderId, OrderAddressRequest request, Long userId) {
-        Order order = orderRepository.getOrThrow(orderId);
-        order.validateBuyer(userId);
-        order.validateAddressUpdateEligible();
-        order.updateShippingAddress(request.shippingAddress());
-    }
-
-    // [구매자] 결제 처리 (AWAITING_PAYMENT -> PAID)
-    @Transactional
-    public void payOrder(Long orderId, Long userId) {
-        Order order = orderRepository.getWithLockOrThrow(orderId);
-        order.validateBuyer(userId);
-        order.validatePaymentEligible();
+    public void processPayment(Order order) {
         order.pay(LocalDateTime.now());
     }
 
     // [판매자] 송장 번호 등록 및 배송 시작  (PAID-> DELIVERING)
     @Transactional
-    public void registerTracking(Long orderId, OrderTrackingRequest request, Long userId) {
-        Order order = orderRepository.getWithLockOrThrow(orderId);
-        order.validateSeller(userId);
-        order.validateShippingEligible();
-        order.startDelivery(request.trackingNumber());
+    public void processShipping(Order order, String trackingNumber) {
+        order.startDelivery(trackingNumber);
     }
 
     // [스케줄러] 미결제 처리 (AWAITING_PAYMENT -> NOT_PAID)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notPaidOrder(Long orderId) {
         // 낙관성 락을 적용한 조회
-        Order order = orderRepository.getWithLockOrThrow(orderId);
+        Order order = getOrderWithLockOrThrow(orderId);
         
         // 이미 상태가 변했다면 즉시 종료
         if (order.getStatus() != OrderStatus.AWAITING_PAYMENT) {
@@ -94,7 +85,7 @@ public class OrderService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notDeliveredOrder(Long orderId) {
         // 낙관성 락을 적용한 조회
-        Order order = orderRepository.getWithLockOrThrow(orderId);
+        Order order = getOrderWithLockOrThrow(orderId);
         
         //이미 상태가 변했다면 즉시 종료
         if (order.getStatus() != OrderStatus.PAID) {

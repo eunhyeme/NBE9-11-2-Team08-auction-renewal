@@ -16,8 +16,12 @@ export async function payOrder(orderId: number): Promise<void> {
 export async function updateShipping(
   orderId: number,
   shippingAddress: string,
+  saveAsDefault: boolean,
 ): Promise<void> {
-  await apiFetch.post(`/api/orders/${orderId}/shipping`, { shippingAddress });
+  await apiFetch.post(`/api/orders/${orderId}/shipping`, { 
+    shippingAddress, 
+    saveAsDefault 
+  });
 }
 
 export async function registerTracking(

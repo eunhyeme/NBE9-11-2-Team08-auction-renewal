@@ -75,4 +75,11 @@ public class UserService {
 
         return UserMeResponse.from(user);
     }
+    // 주문 과정에서 기본 배송지로 저장 시 업데이트 
+    @Transactional
+    public void updateDefaultAddress(Long userId, String newAddress) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        user.updateProfile(user.getNickname(), newAddress);
+    }
 }

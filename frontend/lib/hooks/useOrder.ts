@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getOrder, payOrder, updateShipping, registerTracking } from "@/lib/api/order";
 import { MOCK_ORDERS } from "@/lib/mocks/data";
 
+
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 export function useOrder(orderId: number) {
@@ -32,11 +33,11 @@ export function usePayOrder(orderId: number) {
 export function useUpdateShipping(orderId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: USE_MOCK
-      ? (_: string) => Promise.resolve()
-      : (shippingAddress: string) => updateShipping(orderId, shippingAddress),
+    mutationFn: ({ address, saveAsDefault }: { address: string; saveAsDefault: boolean }) => 
+      updateShipping(orderId, address, saveAsDefault),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
 }
