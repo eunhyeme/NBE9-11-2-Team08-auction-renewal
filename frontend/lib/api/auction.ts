@@ -174,11 +174,11 @@ export async function deleteAuction(auctionId: number): Promise<void> {
  * 경매 상품 수정 (PATCH)
  */
 export async function updateAuction(
-  auctionId: number, 
+  auctionId: number,
   data: Partial<AuctionFormValues>
 ): Promise<AuctionResponse> {
   const formData = new FormData();
-  
+
   // 1. 수정 데이터 구성 (Partial 타입이므로 값이 있는 경우만 보냄)
   const requestDto: any = {
     title: data.title,

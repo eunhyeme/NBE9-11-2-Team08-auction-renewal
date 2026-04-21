@@ -25,7 +25,7 @@ export function useUpdateMe() {
       : (data: ProfileUpdateRequest) => updateMe(data),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ["me"] });
-      updateProfile({ nickname: updated.nickname, hasBluecheck: updated.hasBluecheck });
+      updateProfile({ nickname: updated.nickname, permissions: updated.permissions });
     },
   });
 }

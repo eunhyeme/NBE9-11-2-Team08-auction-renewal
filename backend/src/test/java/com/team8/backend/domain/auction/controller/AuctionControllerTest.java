@@ -4,6 +4,7 @@ import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.entity.AuctionStatus;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
 import com.team8.backend.domain.user.entity.User;
+import com.team8.backend.domain.user.entity.UserPermission;
 import com.team8.backend.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,12 +45,14 @@ class AuctionControllerTest {
                 .build();
 
         User normalUser = userRepository.save(User.create("normal@test.com", "pw", "일반유저", "서울"));
-        User bluecheckUser = userRepository.save(User.createAdmin("blue@test.com", "pw", "블루체크유저", "부산"));
+        User sellerUser = User.create("seller@test.com", "pw", "판매자유저", "부산");
+        sellerUser.grantPermission(UserPermission.SELLER);
+        userRepository.save(sellerUser);
 
         auctionRepository.save(auction("아이폰 14", 600000L, normalUser));
-        auctionRepository.save(auction("맥북 프로", 1200000L, bluecheckUser));
+        auctionRepository.save(auction("맥북 프로", 1200000L, sellerUser));
         auctionRepository.save(auction("에어팟", 150000L, normalUser));
-        auctionRepository.save(auction("갤럭시 탭", 300000L, bluecheckUser));
+        auctionRepository.save(auction("갤럭시 탭", 300000L, sellerUser));
     }
 
     private Auction auction(String title, Long price, User seller) {

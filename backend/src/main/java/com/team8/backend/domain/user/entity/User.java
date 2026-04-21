@@ -6,6 +6,8 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -37,26 +39,27 @@ public class User {
 
     private String address;
 
-    @Column(name = "has_bluecheck", nullable = false)
-    private Boolean hasBluecheck;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_permissions", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    private final Set<UserPermission> permissions = new HashSet<>();
 
     protected User() {}
 
-    private User(String email, String password, UserRole role, String nickname, String address, Boolean hasBluecheck) {
+    private User(String email, String password, UserRole role, String nickname, String address) {
         this.email = email;
         this.password = password;
         this.role = role;
         this.nickname = nickname;
         this.address = address;
-        this.hasBluecheck = hasBluecheck;
     }
 
     public static User create(String email, String password, String nickname, String address) {
-        return new User(email, password, UserRole.ROLE_USER, nickname, address, false);
+        return new User(email, password, UserRole.ROLE_USER, nickname, address);
     }
 
     public static User createAdmin(String email, String password, String nickname, String address) {
-        return new User(email, password, UserRole.ROLE_ADMIN, nickname, address, true);
+        return new User(email, password, UserRole.ROLE_ADMIN, nickname, address);
     }
 
     public void updateProfile(String nickname, String address) {
@@ -64,7 +67,11 @@ public class User {
         this.address = address;
     }
 
-    public void grantBluecheck() {
-        this.hasBluecheck = true;
+    public void grantPermission(UserPermission permission) {
+        this.permissions.add(permission);
+    }
+
+    public boolean hasPermission(UserPermission permission) {
+        return this.permissions.contains(permission);
     }
 }

@@ -10,6 +10,7 @@ import com.team8.backend.domain.auction.repository.AuctionSpecification;
 import org.springframework.data.jpa.domain.Specification;
 import com.team8.backend.domain.order.service.OrderService;
 import com.team8.backend.domain.user.entity.User;
+import com.team8.backend.domain.user.entity.UserPermission;
 import com.team8.backend.domain.user.repository.UserRepository;
 import com.team8.backend.global.exception.CustomException;
 import com.team8.backend.global.exception.ErrorCode;
@@ -93,6 +94,13 @@ public class AuctionService {
      */
     @Transactional
     public AuctionResponse createAuction(Long userId, AuctionCreateRequest request, org.springframework.web.multipart.MultipartFile image) throws java.io.IOException {
+        User seller = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (!seller.hasPermission(UserPermission.SELLER)) {
+            throw new CustomException(ErrorCode.ACCESS_DENIED);
+        }
+
         // 1. 등록 시 이미지는 필수
         if (image == null || image.isEmpty()) {
             throw new CustomException(ErrorCode.IMAGE_REQUIRED);
@@ -100,9 +108,6 @@ public class AuctionService {
 
         // 2. 파일 저장 및 URL 반환
         String savedImageUrl = fileService.saveFile(image);
-
-        User seller = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         LocalDateTime start = request.startedAt().truncatedTo(ChronoUnit.SECONDS);
         LocalDateTime end = request.endedAt().truncatedTo(ChronoUnit.SECONDS);

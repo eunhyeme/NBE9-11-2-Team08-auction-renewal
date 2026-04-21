@@ -263,7 +263,8 @@ export default function ProfilePage() {
       : salesFilter === "ongoing"
         ? salesOngoingOrders
         : salesDoneOrders;
-  const canApplyMembership = !me?.hasBluecheck && me?.role !== "ROLE_ADMIN";
+  const isSeller = me?.permissions.includes("SELLER")
+  const canApplyMembership = !isSeller && me?.role !== "ROLE_ADMIN";
 
   return (
     <div className="flex flex-col gap-6">
@@ -281,7 +282,7 @@ export default function ProfilePage() {
           <div className="flex-1 flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <span className="text-xl font-bold">{me?.nickname}</span>
-              {me?.hasBluecheck && (
+              {isSeller && (
                 <MembershipBadge className="h-5 w-5" />
               )}
             </div>

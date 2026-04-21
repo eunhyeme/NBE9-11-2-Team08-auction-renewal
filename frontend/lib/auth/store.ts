@@ -7,7 +7,7 @@ interface AuthState {
   userId: number | null;
   email: string | null;
   nickname: string | null;
-  hasBluecheck: boolean;
+  permissions: string[];
   role: UserRole | null;
   isLoggedIn: boolean;
 
@@ -15,13 +15,13 @@ interface AuthState {
     userId: number;
     email: string;
     nickname: string;
-    hasBluecheck: boolean;
+    permissions: string[];
     role: UserRole;
   }) => void;
   logout: () => void;
   updateProfile: (data: {
     nickname: string;
-    hasBluecheck?: boolean;
+    permissions?: string[];
   }) => void;
 }
 
@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   userId: null,
   email: null,
   nickname: null,
-  hasBluecheck: false,
+  permissions: [],
   role: null,
   isLoggedIn: false,
 
@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       userId: null,
       email: null,
       nickname: null,
-      hasBluecheck: false,
+      permissions: [],
       role: null,
       isLoggedIn: false,
     }),
@@ -52,6 +52,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateProfile: (data) =>
     set((state) => ({
       nickname: data.nickname,
-      hasBluecheck: data.hasBluecheck ?? state.hasBluecheck,
+      permissions: data.permissions ?? state.permissions,
     })),
 }));

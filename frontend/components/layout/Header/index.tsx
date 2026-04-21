@@ -20,7 +20,8 @@ import { cn } from "@/lib/utils";
 
 export function Header() {
   const router = useRouter();
-  const { isLoggedIn, nickname, hasBluecheck, role } = useAuthStore();
+  const { isLoggedIn, nickname, role, permissions } = useAuthStore();
+  const isSeller = permissions.includes("SELLER");
   const logoutAction = useAuthStore((s) => s.logout);
 
   const handleLogout = async () => {
@@ -61,7 +62,7 @@ export function Header() {
                 </Avatar>
                 <span className="hidden sm:inline-flex items-center gap-1">
                   {nickname}
-                  {hasBluecheck && <MembershipBadge />}
+                  {isSeller && <MembershipBadge />}
                 </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">

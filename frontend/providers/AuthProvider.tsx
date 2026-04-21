@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId: MOCK_ME.userId,
         email: MOCK_ME.email,
         nickname: MOCK_ME.nickname,
-        hasBluecheck: MOCK_ME.hasBluecheck,
+        permissions: MOCK_ME.permissions,
         role: MOCK_ME.role,
       });
       return;
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userId: me.userId,
           email: me.email,
           nickname: me.nickname,
-          hasBluecheck: me.hasBluecheck,
+          permissions: me.permissions,
           role: me.role,
         });
       } catch {

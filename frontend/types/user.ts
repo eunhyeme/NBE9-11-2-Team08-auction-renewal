@@ -5,7 +5,7 @@ export interface UserMeResponse {
   email: string;
   nickname: string;
   address: string;
-  hasBluecheck: boolean;
+  permissions: string[];
   role: UserRole;
 }
 

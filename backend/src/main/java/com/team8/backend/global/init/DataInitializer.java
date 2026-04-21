@@ -8,6 +8,7 @@ import com.team8.backend.domain.bid.repository.BidRepository;
 import com.team8.backend.domain.order.entity.Order;
 import com.team8.backend.domain.order.repository.OrderRepository;
 import com.team8.backend.domain.user.entity.User;
+import com.team8.backend.domain.user.entity.UserPermission;
 import com.team8.backend.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
@@ -39,7 +40,7 @@ public class DataInitializer implements ApplicationRunner {
 
         // ── USERS ──────────────────────────────────────────────
         User seller1 = User.create("seller1@test.com", encodedPassword, "판매왕김씨", "서울 강남구");
-        seller1.grantBluecheck();
+        seller1.grantPermission(UserPermission.SELLER);
         seller1 = userRepository.save(seller1);
 
         User seller2 = User.create("seller2@test.com", encodedPassword, "중고천재", "부산 해운대구");

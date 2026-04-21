@@ -181,7 +181,7 @@ export const MOCK_ME: UserMeResponse = {
   email: "demo@example.com",
   nickname: "데모유저",
   address: "서울특별시 강남구 테헤란로 123, 101호",
-  hasBluecheck: true,
+  permissions: ["SELLER"],
   role: "ROLE_USER",
 };
 

@@ -7,6 +7,7 @@ import com.team8.backend.domain.membership.entity.MembershipApplication;
 import com.team8.backend.domain.membership.entity.MembershipStatus;
 import com.team8.backend.domain.membership.repository.MembershipApplicationRepository;
 import com.team8.backend.domain.user.entity.User;
+import com.team8.backend.domain.user.entity.UserPermission;
 import com.team8.backend.domain.user.repository.UserRepository;
 import com.team8.backend.global.exception.CustomException;
 import com.team8.backend.global.exception.ErrorCode;
@@ -69,7 +70,7 @@ public class MembershipApplicationService {
 
         if (request.status() == MembershipStatus.APPROVED) {
             application.approve(reviewerId, reviewedAt);
-            application.getUser().grantBluecheck();
+            application.getUser().grantPermission(UserPermission.SELLER);
         } else if (request.status() == MembershipStatus.REJECTED) {
             application.reject(reviewerId, reviewedAt, request.reason());
         } else {
