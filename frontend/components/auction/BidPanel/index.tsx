@@ -38,6 +38,7 @@ function BidForm({ auction }: { auction: AuctionResponse }) {
   const [pendingAmount, setPendingAmount] = useState(0);
   const placeBid = usePlaceBid(auction.auctionId);
 
+  // 현재가 + 입찰 단위를 계산한 최소 입찰 금액
   const minBid = calcMinBid(auction.currentPrice, auction.bidUnit);
 
   const bidSchema = z.object({
@@ -52,8 +53,13 @@ function BidForm({ auction }: { auction: AuctionResponse }) {
     handleSubmit,
     reset,
     formState: { errors },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } = useForm<BidForm>({ resolver: zodResolver(bidSchema) as any });
+  } = useForm<BidForm>({ 
+    resolver: zodResolver(bidSchema) as any,
+    // 초기값을 최소 입찰가로 설정하여 유저가 바로 입찰 버튼을 누를 수 있게 배려
+    defaultValues: {
+      bidPrice: minBid,
+    }
+  });
 
   const onConfirm = async () => {
     if (!userId) return;
@@ -65,7 +71,7 @@ function BidForm({ auction }: { auction: AuctionResponse }) {
       });
       toast.success(`${formatPrice(pendingAmount)}로 입찰했습니다.`);
       setOpen(false);
-      reset();
+      reset({ bidPrice: minBid }); // 입찰 성공 후 다음 최소가로 리셋
     } catch (err) {
       if (err instanceof ApiError) {
         toast.error(err.message);
@@ -103,6 +109,8 @@ function BidForm({ auction }: { auction: AuctionResponse }) {
         <Separator />
 
         <form
+        // noValidate를 추가해야 '입찰 단위 배수가 아닌 금액'을 브라우저가 차단하지 않고 Zod 검증 단계로 넘겨줍니다.
+          noValidate 
           onSubmit={handleSubmit((values) => {
             setPendingAmount(values.bidPrice);
             setOpen(true);
@@ -115,8 +123,13 @@ function BidForm({ auction }: { auction: AuctionResponse }) {
               <Input
                 id="bidPrice"
                 type="number"
+                // 화살표 클릭 시 입찰 단위씩 증감합니다.
+                step={auction.bidUnit}
+                // 화살표로 내릴 때 최소 입찰가 미만으로는 안 내려갑니다.
+                min={minBid}
                 placeholder={String(minBid)}
-                {...register("bidPrice")}
+                {...register("bidPrice", { valueAsNumber: true })}
+                className="flex-1"
               />
               <Button type="submit" className="shrink-0">
                 입찰하기
