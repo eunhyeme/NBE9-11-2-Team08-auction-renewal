@@ -61,7 +61,7 @@ class AuctionServiceTest {
         Page<Auction> page = new PageImpl<>(List.of(stubAuction("아이폰", 500000L)));
         given(auctionRepository.findAll(any(Specification.class), any(Pageable.class))).willReturn(page);
 
-        Page<AuctionResponse> result = auctionService.getAuctions(pageable, null, null, null, false);
+        Page<AuctionResponse> result = auctionService.getAuctions(pageable, null, null, null, null);
 
         assertThat(result.getTotalElements()).isEqualTo(1);
         verify(auctionRepository).findAll(any(Specification.class), any(Pageable.class));
@@ -74,7 +74,7 @@ class AuctionServiceTest {
         given(auctionRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .willReturn(Page.empty());
 
-        auctionService.getAuctions(pageable, "맥북", 100000L, 2000000L, true);
+        auctionService.getAuctions(pageable, "맥북", 100000L, 2000000L, null);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Specification<Auction>> specCaptor = ArgumentCaptor.forClass(Specification.class);
@@ -90,10 +90,34 @@ class AuctionServiceTest {
         given(auctionRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(auction)));
 
-        Page<AuctionResponse> result = auctionService.getAuctions(pageable, null, null, null, false);
+        Page<AuctionResponse> result = auctionService.getAuctions(pageable, null, null, null, null);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).title()).isEqualTo("갤럭시");
         assertThat(result.getContent().get(0).currentPrice()).isEqualTo(300000L);
+    }
+
+    @Test
+    @DisplayName("statuses가 null이면 ONGOING 기본값으로 spec이 생성된다")
+    void getAuctions_nullStatuses_defaultsToOngoing() {
+        Pageable pageable = PageRequest.of(0, 10);
+        given(auctionRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .willReturn(Page.empty());
+
+        auctionService.getAuctions(pageable, null, null, null, null);
+
+        verify(auctionRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("CANCELED만 전달하면 ONGOING 기본값으로 대체된다")
+    void getAuctions_onlyCanceledStatus_defaultsToOngoing() {
+        Pageable pageable = PageRequest.of(0, 10);
+        given(auctionRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .willReturn(Page.empty());
+
+        auctionService.getAuctions(pageable, null, null, null, List.of(AuctionStatus.CANCELED));
+
+        verify(auctionRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 }

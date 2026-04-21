@@ -39,8 +39,17 @@ public class AuctionService {
      * 비인증 사용자도 접근 가능한 비즈니스 로직
      */
     public Page<AuctionResponse> getAuctions(
-            Pageable pageable, String keyword, Long minPrice, Long maxPrice, Boolean bluecheckOnly) {
+            Pageable pageable, String keyword, Long minPrice, Long maxPrice, List<AuctionStatus> statuses) {
         Specification<Auction> spec = AuctionSpecification.notDeleted();
+
+        List<AuctionStatus> allowedStatuses = (statuses == null || statuses.isEmpty())
+                ? List.of(AuctionStatus.ONGOING)
+                : statuses.stream().filter(s -> s != AuctionStatus.CANCELED).toList();
+        if (allowedStatuses.isEmpty()) {
+            allowedStatuses = List.of(AuctionStatus.ONGOING);
+        }
+        spec = spec.and(AuctionSpecification.statusIn(allowedStatuses));
+
         if (keyword != null && !keyword.isBlank()) {
             spec = spec.and(AuctionSpecification.titleContains(keyword));
         }
@@ -49,9 +58,6 @@ public class AuctionService {
         }
         if (maxPrice != null) {
             spec = spec.and(AuctionSpecification.maxPrice(maxPrice));
-        }
-        if (Boolean.TRUE.equals(bluecheckOnly)) {
-            spec = spec.and(AuctionSpecification.bluecheckOnly());
         }
         return auctionRepository.findAll(spec, pageable).map(AuctionResponse::from);
     }

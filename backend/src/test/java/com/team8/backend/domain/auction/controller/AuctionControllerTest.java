@@ -120,40 +120,6 @@ class AuctionControllerTest {
     }
 
     @Test
-    @DisplayName("bluecheckOnly=true 이면 블루체크 판매자 경매만 반환")
-    void getAuctions_bluecheckOnly_returnsBluecheckSellerAuctions() throws Exception {
-        mockMvc.perform(get("/api/auctions").param("bluecheckOnly", "true"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.totalElements", is(2)))
-                .andExpect(jsonPath("$.result.content[*].title", containsInAnyOrder("맥북 프로", "갤럭시 탭")));
-    }
-
-    @Test
-    @DisplayName("bluecheckOnly=false 이면 전체 반환")
-    void getAuctions_bluecheckOnlyFalse_returnsAll() throws Exception {
-        mockMvc.perform(get("/api/auctions").param("bluecheckOnly", "false"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.totalElements", is(4)));
-    }
-
-    @Test
-    @DisplayName("keyword + bluecheckOnly 복합 필터 — 일치하는 항목 있음")
-    void getAuctions_keywordAndBluecheckOnly_returnsMatching() throws Exception {
-        mockMvc.perform(get("/api/auctions").param("keyword", "맥북").param("bluecheckOnly", "true"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.totalElements", is(1)))
-                .andExpect(jsonPath("$.result.content[0].title", is("맥북 프로")));
-    }
-
-    @Test
-    @DisplayName("keyword + bluecheckOnly 복합 필터 — 일치하는 항목 없음")
-    void getAuctions_keywordAndBluecheckOnly_returnsEmpty() throws Exception {
-        mockMvc.perform(get("/api/auctions").param("keyword", "에어팟").param("bluecheckOnly", "true"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.totalElements", is(0)));
-    }
-
-    @Test
     @DisplayName("가격 높은순 정렬")
     void getAuctions_sortByPriceDesc_returnsSortedByPrice() throws Exception {
         mockMvc.perform(get("/api/auctions").param("sort", "currentPrice,desc"))
@@ -193,5 +159,66 @@ class AuctionControllerTest {
         mockMvc.perform(get("/api/auctions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.totalElements", is(4)));
+    }
+
+    @Test
+    @DisplayName("statuses 미전달 시 ONGOING 경매만 반환")
+    void getAuctions_noStatuses_returnsOnlyOngoing() throws Exception {
+        User seller = userRepository.save(User.create("s2@test.com", "pw", "판매자2", null));
+        auctionRepository.save(auctionWithStatus("낙찰 상품", 500000L, seller, AuctionStatus.WON));
+        auctionRepository.save(auctionWithStatus("유찰 상품", 200000L, seller, AuctionStatus.UNSOLD));
+
+        mockMvc.perform(get("/api/auctions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.totalElements", is(4)))
+                .andExpect(jsonPath("$.result.content[*].status", everyItem(is("ONGOING"))));
+    }
+
+    @Test
+    @DisplayName("statuses=WON 이면 낙찰 경매만 반환")
+    void getAuctions_statusWon_returnsOnlyWon() throws Exception {
+        User seller = userRepository.save(User.create("s3@test.com", "pw", "판매자3", null));
+        auctionRepository.save(auctionWithStatus("낙찰 상품", 500000L, seller, AuctionStatus.WON));
+
+        mockMvc.perform(get("/api/auctions").param("statuses", "WON"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.totalElements", is(1)))
+                .andExpect(jsonPath("$.result.content[0].status", is("WON")));
+    }
+
+    @Test
+    @DisplayName("statuses=UNSOLD 이면 유찰 경매만 반환")
+    void getAuctions_statusUnsold_returnsOnlyUnsold() throws Exception {
+        User seller = userRepository.save(User.create("s4@test.com", "pw", "판매자4", null));
+        auctionRepository.save(auctionWithStatus("유찰 상품", 200000L, seller, AuctionStatus.UNSOLD));
+
+        mockMvc.perform(get("/api/auctions").param("statuses", "UNSOLD"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.totalElements", is(1)))
+                .andExpect(jsonPath("$.result.content[0].status", is("UNSOLD")));
+    }
+
+    @Test
+    @DisplayName("statuses=CANCELED 전달 시 CANCELED는 무시되어 ONGOING만 반환")
+    void getAuctions_statusCanceled_ignoredAndReturnsOngoing() throws Exception {
+        mockMvc.perform(get("/api/auctions").param("statuses", "CANCELED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.totalElements", is(4)))
+                .andExpect(jsonPath("$.result.content[*].status", everyItem(is("ONGOING"))));
+    }
+
+    private Auction auctionWithStatus(String title, Long price, User seller, AuctionStatus status) {
+        return Auction.builder()
+                .seller(seller)
+                .title(title)
+                .imageUrl("/img.jpg")
+                .description("설명")
+                .startPrice(price)
+                .currentPrice(price)
+                .bidUnit(1000)
+                .status(status)
+                .startedAt(NOW.plusDays(1))
+                .endedAt(NOW.plusDays(3))
+                .build();
     }
 }

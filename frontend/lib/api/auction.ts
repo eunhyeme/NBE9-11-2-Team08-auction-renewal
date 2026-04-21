@@ -14,7 +14,7 @@ export async function getAuctions(
   sort = "startedAt,desc",
   minPrice?: number,
   maxPrice?: number,
-  bluecheckOnly?: boolean,
+  statuses?: string[],
 ): Promise<Page<AuctionResponse>> {
   const params = new URLSearchParams({
     page: String(page),
@@ -25,7 +25,9 @@ export async function getAuctions(
   if (keyword) params.set("keyword", keyword);
   if (minPrice !== undefined) params.set("minPrice", String(minPrice));
   if (maxPrice !== undefined) params.set("maxPrice", String(maxPrice));
-  if (bluecheckOnly) params.set("bluecheckOnly", "true");
+  if (statuses && statuses.length > 0) {
+    statuses.forEach((s) => params.append("statuses", s));
+  }
 
   const res = await apiFetch.get<ApiResponse<Page<AuctionResponse>>>(
     `/api/auctions?${params.toString()}`,

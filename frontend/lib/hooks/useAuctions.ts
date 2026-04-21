@@ -11,13 +11,13 @@ export function useAuctions(
   sort = "startedAt,desc",
   minPrice?: number,
   maxPrice?: number,
-  bluecheckOnly?: boolean,
+  statuses?: string[],
 ) {
   return useQuery({
-    queryKey: ["auctions", page, size, keyword, sort, minPrice, maxPrice, bluecheckOnly],
+    queryKey: ["auctions", page, size, keyword, sort, minPrice, maxPrice, statuses],
     queryFn: USE_MOCK
       ? () => Promise.resolve(MOCK_AUCTIONS_PAGE)
-      : () => getAuctions(page, size, keyword, sort, minPrice, maxPrice, bluecheckOnly),
+      : () => getAuctions(page, size, keyword, sort, minPrice, maxPrice, statuses),
     placeholderData: keepPreviousData,
   });
 }

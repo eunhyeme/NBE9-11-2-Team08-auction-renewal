@@ -22,6 +22,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import com.team8.backend.domain.auction.entity.AuctionStatus;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,10 +46,10 @@ public class AuctionController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long minPrice,
             @RequestParam(required = false) Long maxPrice,
-            @RequestParam(required = false, defaultValue = "false") Boolean bluecheckOnly
+            @RequestParam(required = false) List<AuctionStatus> statuses
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                auctionService.getAuctions(pageable, keyword, minPrice, maxPrice, bluecheckOnly)));
+                auctionService.getAuctions(pageable, keyword, minPrice, maxPrice, statuses)));
     }
 
     /**

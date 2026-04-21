@@ -21,17 +21,17 @@ interface AuctionGridProps {
   sort?: string;
   minPrice?: number;
   maxPrice?: number;
-  bluecheckOnly?: boolean;
+  statuses?: string[];
 }
 
-export function AuctionGrid({ keyword, sort, minPrice, maxPrice, bluecheckOnly }: AuctionGridProps = {}) {
+export function AuctionGrid({ keyword, sort, minPrice, maxPrice, statuses }: AuctionGridProps = {}) {
   const [page, setPage] = useState(0);
 
   useEffect(() => {
     setPage(0);
-  }, [keyword, sort, minPrice, maxPrice, bluecheckOnly]);
+  }, [keyword, sort, minPrice, maxPrice, statuses]);
 
-  const { data, isLoading, isError } = useAuctions(page, PAGE_SIZE, keyword, sort, minPrice, maxPrice, bluecheckOnly);
+  const { data, isLoading, isError } = useAuctions(page, PAGE_SIZE, keyword, sort, minPrice, maxPrice, statuses);
 
   if (isError) return <ErrorMessage message="경매 목록을 불러오는 데 실패했습니다." />;
 
@@ -46,7 +46,7 @@ export function AuctionGrid({ keyword, sort, minPrice, maxPrice, bluecheckOnly }
   }
 
   if (!data?.content.length) {
-    return <EmptyState message="진행 중인 경매가 없습니다." />;
+    return <EmptyState message="해당하는 경매가 없습니다." />;
   }
 
   return (

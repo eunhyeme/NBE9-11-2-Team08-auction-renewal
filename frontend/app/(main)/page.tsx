@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Search, PlusCircle, BadgeCheck } from "lucide-react";
+import { Search, PlusCircle, ChevronDown } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +14,14 @@ import {
 import { AuctionGrid } from "@/components/auction/AuctionGrid";
 import { useAuthStore } from "@/lib/auth/store";
 import { cn } from "@/lib/utils";
+
+type AuctionStatusFilter = "ONGOING" | "WON" | "UNSOLD";
+
+const STATUS_OPTIONS: { label: string; value: AuctionStatusFilter }[] = [
+  { label: "경매 중", value: "ONGOING" },
+  { label: "낙찰", value: "WON" },
+  { label: "유찰", value: "UNSOLD" },
+];
 
 const SORT_OPTIONS = [
   { label: "남은시간 순", key: "endingSoon", sort: "endedAt,asc" },
@@ -45,10 +53,56 @@ export default function HomePage() {
   const [sortKey, setSortKey] = useState("newest");
   const sort = SORT_OPTIONS.find((o) => o.key === sortKey)?.sort ?? "startedAt,desc";
   const [priceRange, setPriceRange] = useState("");
-  const [bluecheckOnly, setBluecheckOnly] = useState(false);
+  const [minPriceInput, setMinPriceInput] = useState("");
+  const [maxPriceInput, setMaxPriceInput] = useState("");
+  const [debouncedMin, setDebouncedMin] = useState("");
+  const [debouncedMax, setDebouncedMax] = useState("");
+  const [priceOpen, setPriceOpen] = useState(false);
+  const priceRef = useRef<HTMLDivElement>(null);
+  const [statusFilters, setStatusFilters] = useState<AuctionStatusFilter[]>(["ONGOING"]);
+
+  const toggleStatus = (status: AuctionStatusFilter) => {
+    setStatusFilters((prev) => {
+      const next = prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status];
+      return next.length === 0 ? ["ONGOING"] : next;
+    });
+  };
   const { isLoggedIn } = useAuthStore();
 
-  const { minPrice, maxPrice } = parsePriceRange(priceRange);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (priceRef.current && !priceRef.current.contains(e.target as Node)) {
+        setPriceOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedMin(minPriceInput), 500);
+    return () => clearTimeout(timer);
+  }, [minPriceInput]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedMax(maxPriceInput), 500);
+    return () => clearTimeout(timer);
+  }, [maxPriceInput]);
+
+  const { minPrice: selectMin, maxPrice: selectMax } = parsePriceRange(priceRange);
+  const rawMin = debouncedMin ? Number(debouncedMin) : selectMin;
+  const rawMax = debouncedMax ? Number(debouncedMax) : selectMax;
+  const minPrice = rawMin !== undefined && rawMax !== undefined && rawMin > rawMax ? undefined : rawMin;
+  const maxPrice = rawMin !== undefined && rawMax !== undefined && rawMin > rawMax ? undefined : rawMax;
+
+  const priceTriggerLabel = (() => {
+    if (minPriceInput || maxPriceInput) {
+      const min = minPriceInput ? `${Number(minPriceInput).toLocaleString()}원` : "0원";
+      const max = maxPriceInput ? `${Number(maxPriceInput).toLocaleString()}원` : "∞";
+      return `${min} ~ ${max}`;
+    }
+    return PRICE_OPTIONS.find((o) => o.value === priceRange)?.label ?? "가격";
+  })();
 
   const handleSearch = () => {
     setKeyword(inputValue.trim());
@@ -58,7 +112,7 @@ export default function HomePage() {
     <div className="flex flex-col gap-6">
       {/* 타이틀 + 판매 등록 */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">진행 중인 경매</h1>
+        <h1 className="text-2xl font-bold">경매 목록</h1>
         {isLoggedIn && (
           <Link
             href="/auctions/new"
@@ -69,6 +123,7 @@ export default function HomePage() {
           </Link>
         )}
       </div>
+
 
       {/* 검색 */}
       <div className="flex gap-2">
@@ -89,28 +144,68 @@ export default function HomePage() {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         {/* 왼쪽: 필터 */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Select value={priceRange} onValueChange={(v) => setPriceRange(v ?? "")}>
-            <SelectTrigger size="sm" className="w-36">
-              {PRICE_OPTIONS.find((o) => o.value === priceRange)?.label ?? "가격"}
-            </SelectTrigger>
-            <SelectContent>
-              {PRICE_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* 상태 필터 (다중 선택) */}
+          <div className="flex gap-2">
+            {STATUS_OPTIONS.map((opt) => (
+              <Button
+                key={opt.value}
+                variant={statusFilters.includes(opt.value) ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleStatus(opt.value)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
 
-          <Button
-            variant={bluecheckOnly ? "default" : "outline"}
-            size="sm"
-            onClick={() => setBluecheckOnly((v) => !v)}
-            className="gap-1.5"
-          >
-            <BadgeCheck className="h-4 w-4" />
-            블루체크 판매자
-          </Button>
+          <div ref={priceRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setPriceOpen((o) => !o)}
+              className="flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm shadow-xs hover:bg-accent"
+            >
+              <span className="max-w-36 truncate">{priceTriggerLabel}</span>
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </button>
+
+            {priceOpen && (
+              <div className="absolute left-0 top-9 z-50 w-52 rounded-md border bg-popover p-1 shadow-md">
+                {PRICE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => { setPriceRange(opt.value); setMinPriceInput(""); setMaxPriceInput(""); setDebouncedMin(""); setDebouncedMax(""); setPriceOpen(false); }}
+                    className={cn(
+                      "w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent",
+                      priceRange === opt.value && !minPriceInput && !maxPriceInput && "font-medium"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+                <div className="my-1 border-t" />
+                <div className="flex items-center gap-1 px-2 py-1.5">
+                  <Input
+                    type="number"
+                    placeholder="최저"
+                    min={0}
+                    value={minPriceInput}
+                    onChange={(e) => { if (Number(e.target.value) >= 0) { setMinPriceInput(e.target.value); setPriceRange(""); } }}
+                    className="h-7 text-xs"
+                  />
+                  <span className="text-muted-foreground text-xs shrink-0">~</span>
+                  <Input
+                    type="number"
+                    placeholder="최고"
+                    min={0}
+                    value={maxPriceInput}
+                    onChange={(e) => { if (Number(e.target.value) >= 0) { setMaxPriceInput(e.target.value); setPriceRange(""); } }}
+                    className="h-7 text-xs"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 오른쪽: 정렬 */}
@@ -133,7 +228,7 @@ export default function HomePage() {
         sort={sort}
         minPrice={minPrice}
         maxPrice={maxPrice}
-        bluecheckOnly={bluecheckOnly}
+        statuses={statusFilters}
       />
     </div>
   );
