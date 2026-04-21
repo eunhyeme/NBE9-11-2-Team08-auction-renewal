@@ -68,7 +68,7 @@ public class DataInitializer implements ApplicationRunner {
                 .bidUnit(10000)
                 .status(AuctionStatus.ONGOING)
                 .startedAt(LocalDateTime.of(2026, 4, 10, 10, 0))
-                .endedAt(LocalDateTime.of(2026, 4, 20, 10, 0))
+                .endedAt(LocalDateTime.of(2026, 4, 30, 10, 0))
                 .version(1L)
                 .deletedAt(null)
                 .build();

@@ -7,6 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class BidEvent {
     private Long auctionId;
-    private Long currentPrice;
+    private Long bidPrice;
     private Long bidderId;
+    private String bidedAt;
 }

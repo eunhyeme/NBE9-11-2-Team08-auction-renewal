@@ -10,9 +10,11 @@ import type { AuctionResponse } from "@/types/auction";
 
 interface AuctionDetailPanelProps {
   auction: AuctionResponse;
+  currentPrice: number;
+
 }
 
-export function AuctionDetailPanel({ auction }: AuctionDetailPanelProps) {
+export function AuctionDetailPanel({auction,currentPrice,}: { auction: AuctionResponse; currentPrice: number;}) {
   return (
     <div className="flex flex-col gap-6 md:flex-row">
       {/* 이미지 */}
@@ -55,7 +57,7 @@ export function AuctionDetailPanel({ auction }: AuctionDetailPanelProps) {
         </div>
 
         <div>
-          <PriceDisplay amount={auction.currentPrice} label="현재가" size="lg" />
+          <PriceDisplay amount={currentPrice} label="현재가" size="lg" />
         </div>
 
         {/* 남은 시간 */}

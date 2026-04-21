@@ -20,10 +20,7 @@ public class BidEventListener {
     public void handleBidEvent(BidEvent event) {
 
         // 1. 이벤트 들어왔는지 확인
-        log.info("[BidEventListener] 이벤트 수신 - auctionId: {}, bidPrice: {}",
-                event.getAuctionId(),
-                event.getCurrentPrice()
-        );
+        log.info("[BidEventListener] 이벤트 수신 : {} ",event.getBidedAt());
 
         String destination = "/topic/auction/" + event.getAuctionId();
 

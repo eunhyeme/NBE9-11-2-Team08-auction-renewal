@@ -1,10 +1,9 @@
 import type { AuctionStatus } from "./auction";
 
 export interface BidResponse {
-  bidId: number;
-  bidderId: number;
   auctionId: number;
   bidPrice: number;
+  bidderId: number;
   bidedAt: string;
 }
 

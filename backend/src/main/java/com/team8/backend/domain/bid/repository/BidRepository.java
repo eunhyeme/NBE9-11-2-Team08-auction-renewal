@@ -44,4 +44,7 @@ public interface BidRepository extends JpaRepository<Bid, Long> {
             @Param("userId") Long userId,
             @Param("auctionId") Long auctionId
     );
+
+    List<Bid> findByAuction_AuctionIdOrderByBidedAtDesc(Long auctionId);
+
 }

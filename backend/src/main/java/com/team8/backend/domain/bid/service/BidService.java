@@ -51,8 +51,10 @@ public class BidService {
         Auction auction = auctionRepository.findById(request.auctionId())
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
 
-        User bidder = userRepository.getReferenceById(userId);
         //생성때마다 일일이 User를 쿼리하면 비효율적인데, 이왕 탈퇴나 id 변경기능 없으니 lazy 적용
+        User bidder = userRepository.getReferenceById(userId);
+
+        Bid bid;
 
         //1. 검증
         validateBid(auction, request,bidder);
@@ -63,9 +65,10 @@ public class BidService {
 
             //3.5분 자동연장 로직
             extendAuctionIfNeeded(auction);
+            //나중에 페이지 리로드 시켜야 될거 같음
 
             //4. 입찰 로그 저장
-            Bid bid = new Bid(bidder, auction, request.bidPrice(), LocalDateTime.now());
+            bid = new Bid(bidder, auction, request.bidPrice(),LocalDateTime.now());
 
             bidRepository.save(bid);
 
@@ -80,9 +83,10 @@ public class BidService {
         eventPublisher.publishEvent(
 
                 new BidEvent(
-                        auction.getAuctionId(),
-                        auction.getCurrentPrice(),
-                        bidder.getUserId()
+                        bid.getAuction().getAuctionId(),
+                        bid.getBidPrice(),
+                        bid.getBidder().getUserId(),
+                        bid.getBidedAt().toString()
                 )
         );
 
@@ -92,10 +96,22 @@ public class BidService {
         return new BidResponse(
                 auction.getAuctionId(),
                 auction.getCurrentPrice(),
-                auction.getLastBidder().getUserId()
+                auction.getLastBidder().getUserId(),
+                auction.getLastBidder().getCreatedAt()
         );
     }
 
+    public List<BidResponse> getAuctionBids(Long auctionId) {
+        return bidRepository.findByAuction_AuctionIdOrderByBidedAtDesc(auctionId)
+                .stream()
+                .map(bid -> new BidResponse(
+                        bid.getAuction().getAuctionId(),
+                        bid.getBidPrice(),
+                        bid.getBidder().getUserId(),
+                        bid.getBidedAt()
+                ))
+                .toList();
+    }
     private void extendAuctionIfNeeded(Auction auction) {
 
         LocalDateTime now = LocalDateTime.now();

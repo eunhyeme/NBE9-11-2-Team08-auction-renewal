@@ -21,3 +21,10 @@ export async function getMyBidHistory(auctionId: number): Promise<MyBidResponse[
   );
   return res.result;
 }
+
+export async function getAuctionBids(auctionId:number) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+
+  const res = await fetch(`${baseUrl}/api/auctions/${auctionId}/bids`);
+  return res.json();
+}

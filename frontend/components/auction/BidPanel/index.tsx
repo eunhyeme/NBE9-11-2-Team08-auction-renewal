@@ -30,8 +30,13 @@ import { formatPrice } from "@/lib/utils/formatPrice";
 import { ApiError } from "@/types/api";
 import type { AuctionResponse } from "@/types/auction";
 
+interface BidPanelProps {
+  auction: AuctionResponse;
+  currentPrice: number;
+}
 // ─── ONGOING: 입찰 폼 ─────────────────────────────────────────────
-function BidForm({ auction }: { auction: AuctionResponse }) {
+function BidForm({auction,currentPrice,}: { auction: AuctionResponse; currentPrice: number;})
+{
   const router = useRouter();
   const { isLoggedIn, userId } = useAuthStore();
   const [open, setOpen] = useState(false);
@@ -39,7 +44,7 @@ function BidForm({ auction }: { auction: AuctionResponse }) {
   const placeBid = usePlaceBid(auction.auctionId);
 
   // 현재가 + 입찰 단위를 계산한 최소 입찰 금액
-  const minBid = calcMinBid(auction.currentPrice, auction.bidUnit);
+  const minBid = calcMinBid(currentPrice, auction.bidUnit);
 
   const bidSchema = z.object({
     bidPrice: z.coerce
@@ -53,7 +58,7 @@ function BidForm({ auction }: { auction: AuctionResponse }) {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<BidForm>({ 
+  } = useForm<BidForm>({
     resolver: zodResolver(bidSchema) as any,
     // 초기값을 최소 입찰가로 설정하여 유저가 바로 입찰 버튼을 누를 수 있게 배려
     defaultValues: {
@@ -71,7 +76,7 @@ function BidForm({ auction }: { auction: AuctionResponse }) {
       });
       toast.success(`${formatPrice(pendingAmount)}로 입찰했습니다.`);
       setOpen(false);
-      reset({ bidPrice: minBid }); // 입찰 성공 후 다음 최소가로 리셋
+      reset();
     } catch (err) {
       if (err instanceof ApiError) {
         toast.error(err.message);
@@ -97,7 +102,7 @@ function BidForm({ auction }: { auction: AuctionResponse }) {
     <>
       <div className="flex flex-col gap-4 rounded-xl border bg-card p-5">
         <div className="flex justify-between items-end">
-          <PriceDisplay amount={auction.currentPrice} label="현재가" size="lg" />
+          <PriceDisplay amount={currentPrice} label="현재가" size="lg" />
           <div className="text-right">
             <p className="text-xs text-muted-foreground">최소 입찰가</p>
             <p className="font-semibold text-[var(--color-brand-600)]">
@@ -110,7 +115,7 @@ function BidForm({ auction }: { auction: AuctionResponse }) {
 
         <form
         // noValidate를 추가해야 '입찰 단위 배수가 아닌 금액'을 브라우저가 차단하지 않고 Zod 검증 단계로 넘겨줍니다.
-          noValidate 
+          noValidate
           onSubmit={handleSubmit((values) => {
             setPendingAmount(values.bidPrice);
             setOpen(true);
@@ -180,12 +185,12 @@ interface BidPanelProps {
   auction: AuctionResponse;
 }
 
-export function BidPanel({ auction }: BidPanelProps) {
+export function BidPanel({ auction, currentPrice }: BidPanelProps) {
   const { userId } = useAuthStore();
 
   switch (auction.status) {
     case "ONGOING":
-      return <BidForm auction={auction} />;
+      return <BidForm auction={auction} currentPrice={currentPrice} />;
 
     case "WON": {
       const isWinner = userId === auction.lastBidderId;
