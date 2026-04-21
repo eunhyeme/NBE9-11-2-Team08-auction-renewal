@@ -9,6 +9,8 @@ export type OrderStatus =
 export interface OrderResponse {
   orderId: number;
   auctionId: number;
+  auctionTitle: string;
+  auctionImageUrl: string | null;
   bidderId: number;
   sellerId: number;
   finalPrice: number;

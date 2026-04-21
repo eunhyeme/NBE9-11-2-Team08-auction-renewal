@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 public record OrderResponse(
         Long orderId,
         Long auctionId,
+        String auctionTitle,
+        String auctionImageUrl,
         Long bidderId,
         Long sellerId,
         Long finalPrice,
@@ -24,6 +26,8 @@ public record OrderResponse(
         return new OrderResponse(
                 order.getOrderId(),
                 order.getAuction().getAuctionId(),
+                order.getAuction().getTitle(),
+                order.getAuction().getImageUrl(),
                 order.getBidder().getUserId(),
                 order.getSeller().getUserId(),
                 order.getFinalPrice(),

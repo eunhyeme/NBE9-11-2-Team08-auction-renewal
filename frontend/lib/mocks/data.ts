@@ -122,6 +122,9 @@ export const MOCK_AUCTIONS_PAGE: Page<AuctionResponse> = {
 export const MOCK_ORDER: OrderResponse = {
   orderId: 101,
   auctionId: 3,
+  auctionTitle: "닌텐도 스위치 OLED 화이트",
+  auctionImageUrl:
+    "https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?w=400",
   bidderId: 5,
   sellerId: 42,
   finalPrice: 310_000,
@@ -139,6 +142,9 @@ export const MOCK_ORDERS: OrderResponse[] = [
   {
     orderId: 102,
     auctionId: 1,
+    auctionTitle: "Apple MacBook Pro 14인치 M3 Pro",
+    auctionImageUrl:
+      "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400",
     bidderId: 5,
     sellerId: 99,
     finalPrice: 2_100_000,
@@ -153,6 +159,9 @@ export const MOCK_ORDERS: OrderResponse[] = [
   {
     orderId: 103,
     auctionId: 2,
+    auctionTitle: "Sony WH-1000XM5 노이즈 캔슬링 헤드폰",
+    auctionImageUrl:
+      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
     bidderId: 5,
     sellerId: 99,
     finalPrice: 280_000,
