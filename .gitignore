@@ -26,3 +26,7 @@ replay_pid*
 .idea
 .DS_Store
 .claude
+
+# k6 테스트 결과 파일
+k6/results/*
+!k6/results/.gitkeep

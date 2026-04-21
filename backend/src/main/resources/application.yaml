@@ -2,19 +2,18 @@ spring:
   application:
     name: backend
 
-  profiles:
-    active: dev
-
-springdoc:
-  api-docs:
-    enabled: false
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:./db_dev;MODE=MySQL}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: org.h2.Driver
 
 websocket:
   max-connections-per-ip: 3
 
 custom:
   jwt:
-    expireSeconds: 1800
-    secretPattern: ${JWT_SECRET}
+    expireSeconds: ${JWT_EXPRIRE_SECONDS:1800}
+    secretPattern: ${JWT_SECRET:test-secret-key-that-is-at-least-32-characters-long-for-hs256}
   cookie:
-    secure: true
+    secure: ${IS_COOKIE_SECURE:false}

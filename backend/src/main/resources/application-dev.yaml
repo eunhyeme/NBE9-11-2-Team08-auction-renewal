@@ -1,10 +1,4 @@
 spring:
-  datasource:
-    url: jdbc:h2:./db_dev;MODE=MySQL
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
-
   h2:
     console:
       enabled: true
@@ -21,16 +15,11 @@ spring:
     show-sql: true
 
 springdoc:
-  api-docs:
-    enabled: true
   default-produces-media-type: application/json; charset=UTF-8
 
 logging:
   level:
+    org.hibernate.sql: debug
     org.hibernate.orm.jdbc.bind: trace
     org.hibernate.orm.jdbc.extract: trace
     org.springframework.transaction.interceptor: trace
-
-custom:
-  cookie:
-    secure: false
