@@ -2,6 +2,7 @@ package com.team8.backend.domain.order.validator;
 
 import com.team8.backend.domain.order.entity.Order;
 import com.team8.backend.domain.order.validator.authority.SellerAuthorityValidator;
+import com.team8.backend.domain.order.validator.shipping.ShippingValidationStrategy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

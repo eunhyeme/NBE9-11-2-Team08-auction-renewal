@@ -2,7 +2,6 @@ package com.team8.backend.domain.order.validator.payment;
 
 import com.team8.backend.domain.order.entity.Order;
 import com.team8.backend.domain.order.entity.OrderStatus;
-import com.team8.backend.domain.order.validator.PaymentValidationStrategy;
 import com.team8.backend.global.exception.CustomException;
 import com.team8.backend.global.exception.ErrorCode;
 import org.springframework.stereotype.Component;

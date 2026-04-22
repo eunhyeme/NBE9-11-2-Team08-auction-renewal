@@ -55,6 +55,12 @@ public class OrderService {
         return orderRepository.findByIdWithLock(orderId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
     }
+    
+    // [구매자] 배송지 수정
+    @Transactional
+    public void updateAddress(Order order, String newAddress) {
+        order.updateShippingAddress(newAddress);
+    }
 
     // [구매자] 결제 처리 (AWAITING_PAYMENT -> PAID) 
     @Transactional

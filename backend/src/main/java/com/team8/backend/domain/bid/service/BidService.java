@@ -57,6 +57,9 @@ public class BidService {
 
         Bid bid;
 
+        // TODO: validateBid에서 상태는 체크하지 않고 있음.
+        //      추가로 현재 CustomException으로 catch 중인데 CustomException throw 되는 부분이 없음.
+        //      save 시 낙관적 락으로 인해 에러가 날 수 있는데 Exception catch에 걸리고 INTERNAL_SERVER ERROR가 나오게 됨.
         //1. 검증
         validateBid(auction, request,bidder);
 

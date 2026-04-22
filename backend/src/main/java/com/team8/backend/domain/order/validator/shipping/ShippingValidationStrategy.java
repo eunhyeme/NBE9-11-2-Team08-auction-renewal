@@ -1,4 +1,4 @@
-package com.team8.backend.domain.order.validator;
+package com.team8.backend.domain.order.validator.shipping;
 
 import com.team8.backend.domain.order.entity.Order;
 

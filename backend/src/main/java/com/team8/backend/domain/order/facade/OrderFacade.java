@@ -5,9 +5,9 @@ import com.team8.backend.domain.order.dto.request.OrderTrackingRequest;
 import com.team8.backend.domain.order.dto.response.OrderResponse;
 import com.team8.backend.domain.order.entity.Order;
 import com.team8.backend.domain.order.service.OrderService;
+import com.team8.backend.domain.order.validator.OrderAddressValidator;
 import com.team8.backend.domain.order.validator.OrderPaymentValidator;
 import com.team8.backend.domain.order.validator.OrderShippingValidator;
-import com.team8.backend.domain.order.validator.authority.BuyerAuthorityValidator;
 import com.team8.backend.domain.order.validator.authority.OrderParticipantAuthorityValidator;
 import com.team8.backend.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +20,11 @@ public class OrderFacade {
 
     private final OrderService orderService;
     private final UserService userService;
+    private final OrderAddressValidator orderAddressValidator;
     private final OrderPaymentValidator paymentValidator;
     private final OrderShippingValidator shippingValidator;
     private final OrderParticipantAuthorityValidator orderParticipantAuthorityValidator;
-    private final BuyerAuthorityValidator buyerAuthorityValidator;
+    
     
     // [참여자] 주문 상세 조회
     public OrderResponse getOrder(Long orderId, Long userId) {
@@ -32,14 +33,19 @@ public class OrderFacade {
         return OrderResponse.from(order);
     }
     
-    // [구매자] 배송지 수정
+    // [구매자] 배송 정보 입력
     @Transactional
     public void updateAddress(Long orderId, OrderAddressRequest request, Long userId) {
+        // 낙관성 락을 적용한 조회 로직
         Order order = orderService.getOrderWithLockOrThrow(orderId);
-        buyerAuthorityValidator.validate(order, userId);
-        order.validateAddressUpdateEligible();  // 배송지 수정 가능 여부
-        order.updateShippingAddress(request.shippingAddress());
 
+        // [구매자] 배송지 수정 가능 여부
+        orderAddressValidator.validate(order,userId);
+
+        // [구매자] 배송지 수정 
+        orderService.updateAddress(order, request.shippingAddress());
+
+        // 주문 과정에서 기본 배송지로 저장 시 업데이트 
         if (request.saveAsDefault()) {
             userService.updateDefaultAddress(userId, request.shippingAddress());
         }
