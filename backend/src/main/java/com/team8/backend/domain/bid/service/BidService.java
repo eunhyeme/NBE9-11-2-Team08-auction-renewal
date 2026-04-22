@@ -86,7 +86,8 @@ public class BidService {
                         bid.getAuction().getAuctionId(),
                         bid.getBidPrice(),
                         bid.getBidder().getUserId(),
-                        bid.getBidedAt().toString()
+                        bid.getBidedAt().toString(),
+                        bidder.getNickname()
                 )
         );
 
@@ -97,7 +98,8 @@ public class BidService {
                 auction.getAuctionId(),
                 auction.getCurrentPrice(),
                 auction.getLastBidder().getUserId(),
-                auction.getLastBidder().getCreatedAt()
+                auction.getLastBidder().getCreatedAt(),
+                auction.getLastBidder().getNickname()
         );
     }
 
@@ -108,7 +110,9 @@ public class BidService {
                         bid.getAuction().getAuctionId(),
                         bid.getBidPrice(),
                         bid.getBidder().getUserId(),
-                        bid.getBidedAt()
+                        bid.getBidedAt(),
+                        bid.getBidder().getNickname()
+
                 ))
                 .toList();
     }

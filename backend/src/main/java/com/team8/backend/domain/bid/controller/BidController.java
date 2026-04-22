@@ -33,7 +33,7 @@ public class BidController {
 
     }
 
-    @GetMapping("/{auctionId}/bids")
+    @GetMapping("/{auctionId}/bids") //상품당 입찰내역
     public ResponseEntity<ApiResponse<List<BidResponse>>> getAuctionBids(
             @PathVariable Long auctionId
     ) {

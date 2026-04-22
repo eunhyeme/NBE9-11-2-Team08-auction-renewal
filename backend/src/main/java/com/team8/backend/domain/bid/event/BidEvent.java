@@ -10,4 +10,5 @@ public class BidEvent {
     private Long bidPrice;
     private Long bidderId;
     private String bidedAt;
+    private String nickname;
 }

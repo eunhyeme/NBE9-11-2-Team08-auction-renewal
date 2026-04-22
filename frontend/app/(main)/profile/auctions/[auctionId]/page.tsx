@@ -57,7 +57,7 @@ export default function MyAuctionDetailPage({ params }: MyAuctionDetailPageProps
               공개 상세 보기에서 확인할 수 있습니다.
             </p>
           </div>
-          <AuctionDetailPanel auction={auction} />
+          <AuctionDetailPanel auction={auction} currentPrice={auction.currentPrice} />
         </>
       )}
     </div>

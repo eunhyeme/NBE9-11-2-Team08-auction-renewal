@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -66,6 +66,12 @@ function BidForm({auction,currentPrice,}: { auction: AuctionResponse; currentPri
     }
   });
 
+  //placeholder 최소입찰가 업데이트 용
+  useEffect(() => {
+    reset({
+      bidPrice: minBid,
+    });
+  }, [minBid, reset]);
   const onConfirm = async () => {
     if (!userId) return;
     try {

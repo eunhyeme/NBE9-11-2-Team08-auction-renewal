@@ -5,6 +5,7 @@ export interface BidResponse {
   bidPrice: number;
   bidderId: number;
   bidedAt: string;
+  nickname: string;
 }
 
 export interface MyBidResponse {

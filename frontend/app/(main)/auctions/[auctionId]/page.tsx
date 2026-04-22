@@ -40,7 +40,7 @@ export default function AuctionDetailPage({ params }: AuctionDetailPageProps) {
     const isSeller = me?.userId === auction?.sellerId;
     const hasBids = auction?.lastBidderId != null;
 
-    // ✅ normalize (REST + WS 통합)
+    // normalize (REST + WS 통합)
     const normalizeBid = (raw: any): BidResponse => ({
         auctionId: raw.auctionId,
         bidPrice: raw.bidPrice ?? raw.currentPrice,
@@ -48,9 +48,10 @@ export default function AuctionDetailPage({ params }: AuctionDetailPageProps) {
         bidedAt:
             raw.bidedAt ??
             new Date().toISOString(),
-    });
+        nickname:raw.nickname
+    }) as BidResponse;
 
-    // ✅ 초기 데이터
+    // 초기 데이터
     useEffect(() => {
         if (!auction) return;
 
@@ -74,13 +75,14 @@ export default function AuctionDetailPage({ params }: AuctionDetailPageProps) {
 
     // ✅ WS 실시간 반영
     useAuctionSocket({
-        auctionId: id,
-        onMessage: (rawBid) => {
-            const bid = normalizeBid(rawBid);
+        auctionId: id, //현재보고있는 경매 id, 해당 경매채널에 구독
+        enabled:auction?.status==="ONGOING",
+        onMessage: (rawBid) => { //서버에서 데이터가 들어오면 실행
+            const bid = normalizeBid(rawBid); //데이터 정규화
 
-            setBids((prev) => {
+            setBids((prev) => { //이전상태를 기준으로 새로운 상태를 만드는 패턴
                 // 중복 방지
-                const exists = prev.some(
+                const exists = prev.some( //새로 들어온 값에 대한 unique check
                     (b) =>
                         b.bidderId === bid.bidderId &&
                         b.bidedAt === bid.bidedAt
@@ -94,7 +96,7 @@ export default function AuctionDetailPage({ params }: AuctionDetailPageProps) {
         },
     });
 
-    // ✅ 내 입찰 필터링
+    // 내 입찰 필터링
     const myBids = bids.filter(
         (bid) => bid.bidderId === me?.userId
     );
@@ -155,7 +157,7 @@ export default function AuctionDetailPage({ params }: AuctionDetailPageProps) {
                         currentPrice={currentPrice}
                     />
 
-                    {/* ✅ 탭 */}
+                    {/* 탭 */}
                     <div className="flex gap-2">
                         <Button
                             variant={activeTab === "all" ? "default" : "outline"}

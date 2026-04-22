@@ -112,7 +112,7 @@ export function AuctionCreateForm() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label>입찰 단위 (<PriceDisplay amount={watch("bidUnit") || 0} />)</Label>
+          <Label>최소 입찰증액 (<PriceDisplay amount={watch("bidUnit") || 0} />)</Label>
           <Input 
             type="number" 
             step="100" 

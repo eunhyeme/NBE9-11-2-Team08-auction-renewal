@@ -6,5 +6,6 @@ public record BidResponse(
         Long auctionId,
         Long bidPrice,
         Long bidderId,
-        LocalDateTime bidedAt
+        LocalDateTime bidedAt,
+        String nickname
 ) {}
