@@ -5,6 +5,7 @@ import com.team8.backend.domain.auction.dto.request.AuctionCreateRequest;
 import com.team8.backend.domain.auction.dto.request.AuctionUpdateRequest;
 import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.entity.Auction;
+import com.team8.backend.domain.auction.event.ImageUploadEvent;
 import com.team8.backend.domain.auction.service.AuctionDomainService;
 import com.team8.backend.domain.auction.service.ImageService;
 import com.team8.backend.domain.user.entity.User;
@@ -12,21 +13,28 @@ import com.team8.backend.domain.user.repository.UserRepository;
 import com.team8.backend.global.exception.CustomException;
 import com.team8.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuctionFacadeImpl implements AuctionFacade {
     private final AuctionDomainService auctionDomainService;
     private final ImageService imageService;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
     public AuctionResponse createAuction(Long userId, AuctionCreateRequest dto, ImageFile image) {
         // 1. 이미지 저장 (ImageFile 사용)
         String imageUrl = imageService.upload(image, "auction");
+
+        // 롤백 대비 이벤트 발생
+        eventPublisher.publishEvent(new ImageUploadEvent(imageUrl));
 
         // 2. 판매자 정보 조회
         User seller = userRepository.findById(userId)
@@ -69,7 +77,7 @@ public class AuctionFacadeImpl implements AuctionFacade {
     public void updateAuction(Long userId, Long auctionId, AuctionUpdateRequest request, ImageFile image) {
         Auction auction = auctionDomainService.getById(auctionId);
 
-        // 권한 및 입찰 여부 체크
+        // 1. 권한 및 입찰 여부 체크 (기존 로직 유지)
         if (!auction.getSeller().getUserId().equals(userId)) {
             throw new CustomException(ErrorCode.ACCESS_DENIED);
         }
@@ -77,29 +85,40 @@ public class AuctionFacadeImpl implements AuctionFacade {
             throw new CustomException(ErrorCode.AUCTION_HAS_BID);
         }
 
-        // 💡 이미지 처리 로직
-        String imageUrl = auction.getImageUrl(); // 기본값은 기존 URL
+        String oldImageUrl = auction.getImageUrl();
+        String imageUrl = oldImageUrl; // 기본값은 기존 URL
+
         if (image != null) {
-            imageService.delete(imageUrl); // 기존 파일 삭제
-            imageUrl = imageService.upload(image, "auction"); // 새 파일 업로드
+            // 💡 2. 새 이미지 먼저 업로드 (성공해야 다음 단계로 진행)
+            String newImageUrl = imageService.upload(image, "auction");
+
+            // 롤백 대비 이벤트 발생
+            eventPublisher.publishEvent(new ImageUploadEvent(newImageUrl));
+
+            imageUrl = newImageUrl;
         }
 
-        // 💡 새로운 이미지 URL을 DTO에 포함시켜 엔티티에 전달
+        // 4. 새로운 이미지 URL을 포함하여 DTO 재구성 및 엔티티 업데이트
         AuctionUpdateRequest updatedRequest;
         if (request != null) {
-            // 수정 데이터가 들어온 경우: 해당 데이터에 imageUrl을 끼워넣음
-            updatedRequest = request.withImageUrl(imageUrl);
-        } else {
-            // 수정 데이터가 없는 경우(이미지만 바꾼 경우): 기존 데이터 유지 + 새로운 imageUrl
+            // 💡 데이터가 들어온 경우에도, 개별 필드가 null이면 기존 값을 가져다 씁니다.
             updatedRequest = new AuctionUpdateRequest(
-                    auction.getTitle(),
-                    auction.getDescription(),
-                    imageUrl, // 💡 새 이미지 URL 반영
-                    auction.getStartPrice(),
-                    auction.getBidUnit(),
-                    null // durationInDays는 업데이트하지 않음
+                    request.title() != null ? request.title() : auction.getTitle(),
+                    request.description() != null ? request.description() : auction.getDescription(),
+                    imageUrl,
+                    request.startPrice() != null ? request.startPrice() : auction.getStartPrice(),
+                    request.bidUnit() != null ? request.bidUnit() : auction.getBidUnit(),
+                    request.durationInDays()
+            );
+        } else {
+            // 이미지만 바꾼 경우 (기존 로직 유지)
+            updatedRequest = new AuctionUpdateRequest(
+                    auction.getTitle(), auction.getDescription(), imageUrl,
+                    auction.getStartPrice(), auction.getBidUnit(), null
             );
         }
-        auction.update(updatedRequest); // 이제 파라미터가 하나인 메서드를 호출합니다.
+
+        auction.update(updatedRequest);
+        imageService.delete(oldImageUrl);
     }
 }
