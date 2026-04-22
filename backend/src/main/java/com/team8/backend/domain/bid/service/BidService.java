@@ -1,10 +1,11 @@
 package com.team8.backend.domain.bid.service;
 
 import com.team8.backend.domain.auction.entity.Auction;
+import com.team8.backend.domain.auction.entity.AuctionStatus;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
 import com.team8.backend.domain.bid.dto.BidRequest;
-import com.team8.backend.domain.bid.dto.MyBidResponse;
 import com.team8.backend.domain.bid.dto.BidResponse;
+import com.team8.backend.domain.bid.dto.MyBidResponse;
 import com.team8.backend.domain.bid.entity.Bid;
 import com.team8.backend.domain.bid.event.BidEvent;
 import com.team8.backend.domain.bid.repository.BidRepository;
@@ -48,7 +49,7 @@ public class BidService {
 
     @Transactional
     public BidResponse createBid(Long userId,BidRequest request) {
-        Auction auction = auctionRepository.findById(request.auctionId())
+        Auction auction = auctionRepository.findByAuctionIdAndDeletedAtIsNull(request.auctionId())
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
 
         //생성때마다 일일이 User를 쿼리하면 비효율적인데, 이왕 탈퇴나 id 변경기능 없으니 lazy 적용
@@ -127,7 +128,7 @@ public class BidService {
 
     private void validateBid(Auction auction, BidRequest request,User bidder) {
         // 1. 경매 종료 여부
-        if (LocalDateTime.now().isAfter(auction.getEndedAt())) {
+        if (LocalDateTime.now().isAfter(auction.getEndedAt()) || auction.getStatus() != AuctionStatus.ONGOING) {
             throw new CustomException(ErrorCode.INVALID_AUCTION_STATE);
         }
 
@@ -144,8 +145,5 @@ public class BidService {
         // 4. 최소 입찰 단위 충족
         if ((request.bidPrice() - auction.getCurrentPrice()) < auction.getBidUnit()) {
             throw new CustomException(ErrorCode.INVALID_BID_UNIT);}
-
-
-
     }
 }
