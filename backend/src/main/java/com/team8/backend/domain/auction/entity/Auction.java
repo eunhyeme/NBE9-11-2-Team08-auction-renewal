@@ -1,8 +1,10 @@
 package com.team8.backend.domain.auction.entity;
 
+import com.team8.backend.domain.auction.dto.request.AuctionUpdateRequest;
 import com.team8.backend.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -72,15 +74,19 @@ public class Auction {
         this.status = AuctionStatus.CANCELED;
     }
 
-    public void update(String title, String description, String imageUrl,
-                       Long startPrice, Integer bidUnit, LocalDateTime newEndedAt) {
-        this.title = title;
-        this.description = description;
-        this.imageUrl = imageUrl;
-        this.startPrice = startPrice;
-        this.currentPrice = startPrice; // 시작가가 바뀌면 현재가도 초기화
-        this.bidUnit = bidUnit;
-        this.endedAt = newEndedAt;
+    public void update(AuctionUpdateRequest request) {
+        this.title = request.title();
+        this.description = request.description();
+        this.imageUrl = request.imageUrl(); // 이제 DTO 내부의 URL을 사용합니다.
+        this.startPrice = request.startPrice();
+        this.bidUnit = request.bidUnit();
+
+        // 현재 경매 가격은 시작가로 초기화
+        this.currentPrice = request.startPrice();
+
+        if (request.durationInDays() != null) {
+            this.endedAt = this.startedAt.plusDays(request.durationInDays());
+        }
     }
 
     public void extendEndTime(long minutes) {

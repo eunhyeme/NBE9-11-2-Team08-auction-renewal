@@ -1,6 +1,11 @@
 package com.team8.backend.domain.auction.dto.request;
 
+import com.team8.backend.domain.auction.entity.Auction;
+import com.team8.backend.domain.auction.entity.AuctionStatus;
 import com.team8.backend.domain.auction.util.AuctionValidator;
+import com.team8.backend.domain.user.entity.User;
+import com.team8.backend.global.exception.CustomException;
+import com.team8.backend.global.exception.ErrorCode;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDateTime;
@@ -34,5 +39,23 @@ public record AuctionCreateRequest(
         @AssertTrue(message = "경매 종료 시간은 시작 시간 이후여야 합니다.")
         public boolean isEndTimeAfterStartTime() {
                 return endedAt.isAfter(startedAt);
+        }
+
+        public Auction toEntity(User seller, String imageUrl) {
+                if (imageUrl == null || imageUrl.isBlank()) {
+                        throw new CustomException(ErrorCode.IMAGE_REQUIRED);
+                }
+                return Auction.builder()
+                        .seller(seller)
+                        .title(this.title)
+                        .description(this.description)
+                        .imageUrl(imageUrl)
+                        .startPrice(this.startPrice)
+                        .currentPrice(this.startPrice)
+                        .bidUnit(this.bidUnit)
+                        .status(AuctionStatus.ONGOING)
+                        .startedAt(this.startedAt)
+                        .endedAt(this.endedAt)
+                        .build();
         }
 }

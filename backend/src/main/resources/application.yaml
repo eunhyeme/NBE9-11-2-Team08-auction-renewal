@@ -17,3 +17,6 @@ custom:
     secretPattern: ${JWT_SECRET:test-secret-key-that-is-at-least-32-characters-long-for-hs256}
   cookie:
     secure: ${IS_COOKIE_SECURE:false}
+
+file:
+  upload-dir: uploads
