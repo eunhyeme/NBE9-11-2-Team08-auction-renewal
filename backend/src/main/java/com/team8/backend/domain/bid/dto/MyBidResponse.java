@@ -19,10 +19,9 @@ public record MyBidResponse(
         String sellerNickname,
         LocalDateTime bidAt,
         LocalDateTime auctionEndedAt,
-        Long lastBidderId,
-        boolean isWinning
+        Long lastBidderId
 ) {
-    public static MyBidResponse from(Bid bid, Long userId) {
+    public static MyBidResponse from(Bid bid) {
         Auction auction = bid.getAuction();
         User seller = auction.getSeller();
         User lastBidder = auction.getLastBidder();
@@ -39,8 +38,7 @@ public record MyBidResponse(
                 seller.getNickname(),
                 bid.getBidedAt(),
                 auction.getEndedAt(),
-                lastBidder != null ? lastBidder.getUserId() : null,
-                lastBidder != null && lastBidder.getUserId().equals(userId)
+                lastBidder != null ? lastBidder.getUserId() : null
         );
     }
 }

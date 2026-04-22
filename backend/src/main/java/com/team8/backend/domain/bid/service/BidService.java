@@ -36,13 +36,13 @@ public class BidService {
 
     public List<MyBidResponse> getMyBids(Long userId) {
         return bidRepository.findLatestByBidderUserId(userId).stream()
-                .map(bid -> MyBidResponse.from(bid, userId))
+                .map(MyBidResponse::from)
                 .toList();
     }
 
     public List<MyBidResponse> getMyBidHistory(Long userId, Long auctionId) {
         return bidRepository.findAllByBidderUserIdAndAuctionIdOrderByBidedAtDesc(userId, auctionId).stream()
-                .map(bid -> MyBidResponse.from(bid, userId))
+                .map(MyBidResponse::from)
                 .toList();
     }
 

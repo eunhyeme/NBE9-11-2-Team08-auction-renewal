@@ -100,13 +100,15 @@ function HistoryListItem({ item }: { item: HistoryItem }) {
         date={item.bid.bidAt}
         amount={item.bid.myBidPrice}
         priceLabel="내 입찰가"
+        secondaryAmount={item.bid.currentPrice}
+        secondaryPriceLabel="현재가"
       />
     );
   }
 
   return (
     <AuctionHistoryLink
-      href={`/profile/auctions/${item.auction.auctionId}`}
+      href={`/auctions/${item.auction.auctionId}`}
       title={item.auction.title}
       imageUrl={item.auction.imageUrl}
       status={item.auction.status}
@@ -125,6 +127,8 @@ interface AuctionHistoryLinkProps {
   date: string;
   amount: number;
   priceLabel: string;
+  secondaryAmount?: number;
+  secondaryPriceLabel?: string;
 }
 
 function AuctionHistoryLink({
@@ -135,6 +139,8 @@ function AuctionHistoryLink({
   date,
   amount,
   priceLabel,
+  secondaryAmount,
+  secondaryPriceLabel,
 }: AuctionHistoryLinkProps) {
   const resolvedImageUrl = resolveImageUrl(imageUrl);
 
@@ -166,7 +172,16 @@ function AuctionHistoryLink({
           </div>
         </div>
 
-        <PriceDisplay amount={amount} label={priceLabel} />
+        <div className="flex shrink-0 flex-col gap-1 text-right">
+          <PriceDisplay amount={amount} label={priceLabel} />
+          {secondaryAmount !== undefined && (
+            <PriceDisplay
+              amount={secondaryAmount}
+              label={secondaryPriceLabel}
+              className="text-muted-foreground"
+            />
+          )}
+        </div>
       </div>
     </Link>
   );

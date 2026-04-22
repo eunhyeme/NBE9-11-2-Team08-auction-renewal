@@ -21,7 +21,6 @@ export interface MyBidResponse {
   bidAt: string;
   auctionEndedAt: string;
   lastBidderId: number | null;
-  isWinning: boolean;
 }
 
 export interface PlaceBidRequest {

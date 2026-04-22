@@ -10,11 +10,3 @@ export function useMyBids(enabled = true) {
     enabled,
   });
 }
-
-export function useMyBidHistory(auctionId: number, enabled = true) {
-  return useQuery({
-    queryKey: ["myBidHistory", auctionId],
-    queryFn: USE_MOCK ? () => Promise.resolve([]) : () => getMyBidHistory(auctionId),
-    enabled: enabled && !!auctionId,
-  });
-}
