@@ -8,6 +8,7 @@ import com.team8.backend.domain.order.entity.OrderStatus;
 import com.team8.backend.domain.order.repository.OrderRepository;
 import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.domain.user.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,66 +32,71 @@ class OrderSchedulerIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private AuctionRepository auctionRepository;
     @Autowired private PlatformTransactionManager tm;
+    @Autowired private EntityManager em;
 
     private User seller;
     private User bidder;
 
     @BeforeEach
-    void cleanUp() {
-        TransactionStatus status = tm.getTransaction(new DefaultTransactionDefinition());
-        orderRepository.deleteAll();
-        auctionRepository.deleteAll();
-        userRepository.deleteAll();
+    void setUp() {
+        TransactionStatus deleteStatus = tm.getTransaction(new DefaultTransactionDefinition());
+        orderRepository.deleteAllInBatch();
+        auctionRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
+        tm.commit(deleteStatus);
 
+        // 2. 기본 사용자 데이터 생성 및 물리 커밋
+        TransactionStatus createStatus = tm.getTransaction(new DefaultTransactionDefinition());
         seller = userRepository.save(User.create("seller@test.com", "pw", "판매자", "주소"));
         bidder = userRepository.save(User.create("bidder@test.com", "pw", "구매자", "주소"));
-        tm.commit(status);
+        tm.commit(createStatus);
     }
 
     @Test
-    @DisplayName("스케줄러 실행 시 만료된 미결제 주문과 미출고 주문이 한꺼번에 처리된다")
+    @DisplayName("결제 및 출고 기한이 만료된 주문들이 스케줄러에 의해 일괄 처리된다")
     void handleOrderTimeouts_Success() {
-        // Given: 1. 데이터 생성 (물리 커밋 필수)
+        // Given: 테스트용 데이터 생성
         TransactionStatus status = tm.getTransaction(new DefaultTransactionDefinition());
 
-        // (1) 결제 기한 만료 주문 (49시간 전 생성)
+        // (1) 결제 기한 만료 케이스: 49시간 전 생성된 주문
         Auction a1 = createAuction("상품1");
-        Order paymentExpiredOrder = orderRepository.save(Order.builder()
+        Order o1 = orderRepository.save(Order.builder()
                 .auction(a1).bidder(bidder).seller(seller).finalPrice(1000L).shippingAddress("서울")
                 .createdAt(LocalDateTime.now().minusHours(49)).build());
 
-        // (2) 출고 기한 만료 주문 (73시간 전 결제 완료)
+        // (2) 출고 기한 만료 케이스: 73시간 전 결제 완료된 주문
         Auction a2 = createAuction("상품2");
-        Order deliveryExpiredOrder = Order.builder()
+        Order o2 = Order.builder()
                 .auction(a2).bidder(bidder).seller(seller).finalPrice(1000L).shippingAddress("서울")
                 .createdAt(LocalDateTime.now().minusHours(100)).build();
-        deliveryExpiredOrder.pay(LocalDateTime.now().minusHours(73)); // 결제 시점 기준 72시간 체크
-        deliveryExpiredOrder = orderRepository.save(deliveryExpiredOrder);
+        o2.pay(LocalDateTime.now().minusHours(73)); // 결제 시점 설정
+        o2 = orderRepository.save(o2);
 
-        // (3) 정상 주문 (아직 기한 안 지남)
+        // (3) 정상 주문 케이스: 현재 시점에 생성된 주문
         Auction a3 = createAuction("상품3");
-        Order normalOrder = orderRepository.save(Order.builder()
+        Order o3 = orderRepository.save(Order.builder()
                 .auction(a3).bidder(bidder).seller(seller).finalPrice(1000L).shippingAddress("서울")
                 .createdAt(LocalDateTime.now()).build());
 
         tm.commit(status);
 
-        // When: 스케줄러 메서드 수동 실행
+        // When: 스케줄러 실행
         orderScheduler.handleOrderTimeouts();
+        em.clear();
 
-        // Then: 상태 변경 확인
-        Order result1 = orderRepository.findById(paymentExpiredOrder.getOrderId()).orElseThrow();
-        Order result2 = orderRepository.findById(deliveryExpiredOrder.getOrderId()).orElseThrow();
-        Order result3 = orderRepository.findById(normalOrder.getOrderId()).orElseThrow();
+        // Then: 각 주문의 상태 변화 검증
+        Order result1 = orderRepository.findById(o1.getOrderId()).orElseThrow();
+        Order result2 = orderRepository.findById(o2.getOrderId()).orElseThrow();
+        Order result3 = orderRepository.findById(o3.getOrderId()).orElseThrow();
 
-        assertThat(result1.getStatus()).isEqualTo(OrderStatus.NOT_PAID);
-        assertThat(result2.getStatus()).isEqualTo(OrderStatus.NOT_DELIVERED);
-        assertThat(result3.getStatus()).isEqualTo(OrderStatus.AWAITING_PAYMENT);
+        assertThat(result1.getStatus()).isEqualTo(OrderStatus.NOT_PAID);       // 48시간 초과 -> 미결제 처리
+        assertThat(result2.getStatus()).isEqualTo(OrderStatus.NOT_DELIVERED); // 72시간 초과 -> 미출고 처리
+        assertThat(result3.getStatus()).isEqualTo(OrderStatus.AWAITING_PAYMENT); // 기한 내 -> 상태 유지
     }
 
     private Auction createAuction(String title) {
         return auctionRepository.save(Auction.builder()
-                .seller(seller).title(title).startPrice(100L).currentPrice(100L)
-                .bidUnit(10).status(AuctionStatus.WON).startedAt(LocalDateTime.now()).endedAt(LocalDateTime.now()).build());
+                .seller(seller).title(title).startPrice(100L).currentPrice(100L).bidUnit(10)
+                .status(AuctionStatus.WON).startedAt(LocalDateTime.now()).endedAt(LocalDateTime.now()).build());
     }
 }

@@ -12,14 +12,22 @@ spring:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
-    show-sql: true
+    # 콘솔에 SQL이 직접 출력되는 것을 방지하여 로그 노이즈를 줄입니다.
+    # SQL 확인이 꼭 필요할 때만 true로 변경하세요.
+    show-sql: false
 
 springdoc:
   default-produces-media-type: application/json; charset=UTF-8
 
 logging:
   level:
-    org.hibernate.sql: debug
-    org.hibernate.orm.jdbc.bind: trace
-    org.hibernate.orm.jdbc.extract: trace
-    org.springframework.transaction.interceptor: trace
+    # SQL 쿼리 및 파라미터 바인딩 로그를 INFO로 높여 평소에는 숨깁니다.
+    org.hibernate.sql: info
+    org.hibernate.orm.jdbc.bind: info
+    org.hibernate.orm.jdbc.extract: info
+    
+    # 초당 수십 줄씩 찍히던 트랜잭션 추적 로그(TRACE)를 INFO로 변경하여 제거합니다.
+    org.springframework.transaction.interceptor: info
+    
+    # 프로젝트 내부에서 작성한 log.info()나 log.debug()는 잘 보이도록 설정합니다.
+    com.team8.backend: debug

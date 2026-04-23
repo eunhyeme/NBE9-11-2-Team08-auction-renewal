@@ -12,7 +12,6 @@ import com.team8.backend.global.exception.CustomException;
 import com.team8.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -50,12 +49,6 @@ public class OrderService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
     }
     
-    // 낙관성 락을 적용한 조회 로직
-    public Order getOrderWithLockOrThrow(Long orderId) {
-        return orderRepository.findByIdWithLock(orderId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-    }
-    
     // [구매자] 배송지 수정
     @Transactional
     public void updateAddress(Order order, String newAddress) {
@@ -74,11 +67,11 @@ public class OrderService {
         order.startDelivery(trackingNumber);
     }
 
-    // [스케줄러] 미결제 처리 (AWAITING_PAYMENT -> NOT_PAID)
+  /*  // [스케줄러] 미결제 처리 (AWAITING_PAYMENT -> NOT_PAID)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notPaidOrder(Long orderId) {
         // 낙관성 락을 적용한 조회
-        Order order = getOrderWithLockOrThrow(orderId);
+        Order order = getOrderOrThrow(orderId);
         
         // 이미 상태가 변했다면 즉시 종료
         if (order.getStatus() != OrderStatus.AWAITING_PAYMENT) {
@@ -91,14 +84,14 @@ public class OrderService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notDeliveredOrder(Long orderId) {
         // 낙관성 락을 적용한 조회
-        Order order = getOrderWithLockOrThrow(orderId);
+        Order order = getOrderOrThrow(orderId);
         
         //이미 상태가 변했다면 즉시 종료
         if (order.getStatus() != OrderStatus.PAID) {
             return;
         }
         order.markNotDelivered();
-    }
+    }*/
 
     // [참여자] 내 거래 내역 조회
     public List<OrderResponse> getMyOrders(Long userId, OrderHistoryRole role, OrderFilter filter) {

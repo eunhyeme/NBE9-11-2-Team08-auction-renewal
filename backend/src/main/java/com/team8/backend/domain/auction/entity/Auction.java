@@ -56,7 +56,7 @@ public class Auction {
     private LocalDateTime endedAt;
 
     @Version
-    @Builder.Default // 💡 빌더 사용 시에도 0L로 초기화해줍니다.
+    @Builder.Default
     @Column(name = "version", nullable = false)
     private Long version = 0L;
 

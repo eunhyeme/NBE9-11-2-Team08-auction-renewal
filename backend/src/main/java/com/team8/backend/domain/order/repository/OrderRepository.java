@@ -2,16 +2,14 @@ package com.team8.backend.domain.order.repository;
 
 import com.team8.backend.domain.order.entity.Order;
 import com.team8.backend.domain.order.entity.OrderStatus;
-import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
     
@@ -43,8 +41,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("userId") Long userId,
             @Param("statuses") Collection<OrderStatus> statuses
     );
-    // 낙관적 락을 적용한 findById
-    @Lock(LockModeType.OPTIMISTIC)
-    @Query("select o from Order o where o.orderId = :id")
-    Optional<Order> findByIdWithLock(@Param("id") Long id);
+  
+    // [벌크] 미결제 -> 결제 실패 상태로 한 번에 업데이트
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Order o SET o.status = com.team8.backend.domain.order.entity.OrderStatus.NOT_PAID " +
+            "WHERE o.status = com.team8.backend.domain.order.entity.OrderStatus.AWAITING_PAYMENT " +
+            "AND o.paymentDeadline < :now")
+    int updatePaymentTimeouts(@Param("now") LocalDateTime now);
+    
+    // [벌크] 결제 완료 -> 미출고 상태로 한 번에 업데이트
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Order o SET o.status = com.team8.backend.domain.order.entity.OrderStatus.NOT_DELIVERED " +
+            "WHERE o.status = com.team8.backend.domain.order.entity.OrderStatus.PAID " +
+            "AND o.deliveryDeadline < :now")
+    int updateDeliveryTimeouts(@Param("now") LocalDateTime now);
 }

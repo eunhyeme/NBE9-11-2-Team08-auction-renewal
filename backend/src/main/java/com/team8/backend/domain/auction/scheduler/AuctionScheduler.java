@@ -7,12 +7,12 @@ import com.team8.backend.domain.auction.service.AuctionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.List;
-
 
 @Slf4j
 @Component
@@ -22,39 +22,54 @@ public class AuctionScheduler {
     private final AuctionRepository auctionRepository;
     private final AuctionService auctionService;
 
+    // 매 초마다 실행
+    @Scheduled(fixedDelay = 1000)
     // 매 분 0초에 실행 (서울 시간 기준)
-    @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
+//    @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
     public void processExpiredAuctions() {
         LocalDateTime now = LocalDateTime.now();
-        List<Auction> expiredAuctions = auctionRepository.findByStatusAndEndedAtBeforeAndDeletedAtIsNull(
-                AuctionStatus.ONGOING, now
-        );
-        //  벌크로 가져온 뒤 for 단건 처리 x
+        int pageSize = 100; // 청크 단위
+        int totalProcessed = 0; // 처리된 경매 수
 
-        expiredAuctions.forEach(auction -> {
-            int maxRetries = 3;
-            for (int i = 0; i < maxRetries; i++) {
-                try {
-                    // 개별 트랜잭션 실행
-                    auctionService.closeAuction(auction.getAuctionId());
-                    break; // 성공 시 for 루프 탈출 (다음 경매로)
+        while (true) {
+            // Slice를 사용하여 0페이지부터 데이터를 100개씩 가져옴
+            Slice<Auction> expiredSlice = auctionRepository.findByStatusAndEndedAtBeforeAndDeletedAtIsNull(
+                    AuctionStatus.ONGOING, now, PageRequest.of(0, pageSize)
+            );
 
-                } catch (OptimisticLockingFailureException e) {
-                    log.warn("낙관적 락 충돌 발생 (재시도 {}/{}): 경매 ID {}", i + 1, maxRetries, auction.getAuctionId(), e); // 예외 객체 로깅
+            if (expiredSlice.isEmpty()) break;
 
-                    if (i == maxRetries - 1) {
-                        log.error("경매 {} 마감 최종 실패 (최대 재시도 초과)", auction.getAuctionId(), e); // 예외 객체 로깅
-                        // 💡 여기서 throw 하지 않음 -> 다음 경매 처리를 위해!
-                    } else {
-                        backoff(i);
-                    }
+            // 각 경매에 대해 재시도 로직을 포함한 개별 마감 처리 실행
+            expiredSlice.getContent().forEach(this::tryCloseAuction);
 
-                } catch (Exception e) {
-                    log.error("경매 {} 처리 중 예상치 못한 오류: {}", auction.getAuctionId(), e.getMessage(), e); // 예외 객체 로깅
-                    break; // 락 충돌 외의 에러는 재시도 의미가 없으므로 루프 탈출
-                }
+            // 처리된 건수 합산
+            totalProcessed += expiredSlice.getNumberOfElements();
+
+            // 다음 페이지가 없으면 루프 종료
+            if (!expiredSlice.hasNext()) break;
+        }
+
+        // 처리된 건수가 있을 때만 로그 출력
+        if (totalProcessed > 0) {
+            log.info("경매 마감 스케줄러 작동: 총 {}건 마감 처리 완료", totalProcessed);
+        }
+    }
+
+    private void tryCloseAuction(Auction auction) {
+        int maxRetries = 3;
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                auctionService.closeAuction(auction.getAuctionId());
+                break; // 성공 시 루프 탈출
+            } catch (OptimisticLockingFailureException e) {
+                log.warn("낙관적 락 충돌 (재시도 {}/{}): {}", i + 1, maxRetries, auction.getAuctionId());
+                if (i == maxRetries - 1) log.error("경매 {} 마감 최종 실패", auction.getAuctionId());
+                else backoff(i);
+            } catch (Exception e) {
+                log.error("경매 {} 처리 중 예상치 못한 오류: {}", auction.getAuctionId(), e.getMessage());
+                break;
             }
-        });
+        }
     }
 
     private void backoff(int retryIndex) {

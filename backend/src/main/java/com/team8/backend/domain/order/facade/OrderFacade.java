@@ -37,7 +37,7 @@ public class OrderFacade {
     @Transactional
     public void updateAddress(Long orderId, OrderAddressRequest request, Long userId) {
         // 낙관성 락을 적용한 조회 로직
-        Order order = orderService.getOrderWithLockOrThrow(orderId);
+        Order order = orderService.getOrderOrThrow(orderId);
 
         // [구매자] 배송지 수정 가능 여부
         orderAddressValidator.validate(order,userId);
@@ -55,7 +55,7 @@ public class OrderFacade {
     @Transactional
     public void payOrder(Long orderId, Long userId) {
         // 낙관성 락을 적용한 조회 로직
-        Order order = orderService.getOrderWithLockOrThrow(orderId);
+        Order order = orderService.getOrderOrThrow(orderId);
 
         // [구매자] 결제 가능 여부 
         paymentValidator.validate(order, userId);
@@ -68,7 +68,7 @@ public class OrderFacade {
     @Transactional
     public void registerTracking(Long orderId, OrderTrackingRequest request, Long userId) {
         // 낙관성 락을 적용한 조회 로직
-        Order order = orderService.getOrderWithLockOrThrow(orderId);
+        Order order = orderService.getOrderOrThrow(orderId);
 
         // [판매자] 송장 등록 가능 여부
         shippingValidator.validate(order, userId);

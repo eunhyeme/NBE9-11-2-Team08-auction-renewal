@@ -2,14 +2,11 @@ package com.team8.backend.domain.auction.repository;
 
 import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.entity.AuctionStatus;
-import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,10 +26,10 @@ public interface AuctionRepository extends JpaRepository<Auction, Long>, JpaSpec
     // 상태가 ONGOING이고 종료 시간이 현재 시간 보다 이전인 경매 조회
     List<Auction> findByStatusAndEndedAtBeforeAndDeletedAtIsNull(AuctionStatus status, LocalDateTime now);
     
-    // 낙관적 락을 적용한 findById
-    @Lock(LockModeType.OPTIMISTIC)
-    @Query("select a from Auction a where a.auctionId = :id and a.deletedAt is null")
-    Optional<Auction> findByIdWithLock(@Param("id") Long id);
-
-   
+    // [청크] Slice를 사용하여 마감 대상 경매를 효율적으로 조회
+    Slice<Auction> findByStatusAndEndedAtBeforeAndDeletedAtIsNull(
+            AuctionStatus status,
+            LocalDateTime now,
+            Pageable pageable
+    );
 }

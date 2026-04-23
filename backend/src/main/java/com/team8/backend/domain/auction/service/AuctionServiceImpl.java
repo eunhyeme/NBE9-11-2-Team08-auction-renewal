@@ -17,6 +17,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 
@@ -80,7 +82,7 @@ public class AuctionServiceImpl implements AuctionService {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void closeAuction(Long auctionId) {
-        Auction auction = auctionRepository.findByIdWithLock(auctionId)
+        Auction auction = auctionRepository.findByAuctionIdAndDeletedAtIsNull(auctionId)
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
 
         if (auction.getStatus() != AuctionStatus.ONGOING) {
@@ -93,8 +95,12 @@ public class AuctionServiceImpl implements AuctionService {
             orderService.createOrder(auction, auction.getLastBidder(), auction.getCurrentPrice());
         }
 
-        // 성공시 웹소켓 연결 끊는 이벤트 발행
-        AuctionEvent event = new AuctionEvent(auction.getAuctionId());
-        eventPublisher.publishEvent(event);
+        // 성공시 웹소켓 연결 끊는 이벤트 발행 (트랜잭션 성공 시에만)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                eventPublisher.publishEvent(new AuctionEvent(auction.getAuctionId()));
+            }
+        });
     }
 }
