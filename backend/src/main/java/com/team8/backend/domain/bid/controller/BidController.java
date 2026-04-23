@@ -21,19 +21,24 @@ public class BidController {
 
     private final BidService bidService;
 
-    //입찰 신청 api
-    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "입찰 (기존)", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/bids")
     public ResponseEntity<ApiResponse<BidResponse>> createBid(
             @RequestBody BidRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails
-
     ) {
-        Long userId = userDetails.getUserId();
-
-        BidResponse bidResponse=bidService.createBid(userId,request);
+        BidResponse bidResponse = bidService.createBid(userDetails.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success(bidResponse));
+    }
 
+    @Operation(summary = "입찰 (원자 UPDATE)", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/bids/atomic")
+    public ResponseEntity<ApiResponse<BidResponse>> createBidAtomic(
+            @RequestBody BidRequest request,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        BidResponse bidResponse = bidService.createBidAtomic(userDetails.getUserId(), request);
+        return ResponseEntity.ok(ApiResponse.success(bidResponse));
     }
 
     @GetMapping("/{auctionId}/bids") //상품당 입찰내역

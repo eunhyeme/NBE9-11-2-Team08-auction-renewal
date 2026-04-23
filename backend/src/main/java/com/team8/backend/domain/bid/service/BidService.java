@@ -149,4 +149,51 @@ public class BidService {
         if ((request.bidPrice() - auction.getCurrentPrice()) < auction.getBidUnit()) {
             throw new CustomException(ErrorCode.INVALID_BID_UNIT);}
     }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // createBidAtomic: DB 조건부 원자 UPDATE + 실패 시 재조회
+    // SQL WHERE 절이 모든 유효성(가격·입찰단위·상태·자기입찰)을 DB 수준에서 보장하므로
+    // 별도 사전 검증 없음. 기존 createBid와 비교용으로 병렬 존재.
+    // ──────────────────────────────────────────────────────────────────────
+
+    @Transactional
+    public BidResponse createBidAtomic(Long userId, BidRequest request) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime nowPlus5 = now.plusMinutes(5);
+
+        // ① 원자적 업데이트: WHERE 조건(가격·입찰단위·상태·자기입찰)을 DB가 직렬 보장
+        int updated = auctionRepository.atomicBidUpdate(
+                request.auctionId(), request.bidPrice(), userId, now, nowPlus5);
+
+        if (updated == 0) {
+            // ② 실패 시 재조회로 원인 판별 (단순 읽기 — 낙관적 락 충돌 없음)
+            Auction current = auctionRepository.findByAuctionIdAndDeletedAtIsNull(request.auctionId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
+            if (current.getStatus() != AuctionStatus.ONGOING
+                    || now.isAfter(current.getEndedAt())) {
+                throw new CustomException(ErrorCode.INVALID_AUCTION_STATE);
+            }
+            if (current.getSeller().getUserId().equals(userId)) {
+                throw new CustomException(ErrorCode.SELF_BIDDING);
+            }
+            throw new CustomException(ErrorCode.BID_TOO_LOW);
+        }
+
+        // ③ 입찰 로그 저장 (시간 연장은 UPDATE 쿼리에서 원자적으로 처리됨)
+        Auction auctionRef = auctionRepository.getReferenceById(request.auctionId());
+        User bidder = userRepository.getReferenceById(userId);
+        Bid bid = new Bid(bidder, auctionRef, request.bidPrice(), now);
+        bidRepository.save(bid);
+
+        log.info("[BidService] 이벤트발행시작");
+        // ④ 이벤트 발행
+        eventPublisher.publishEvent(new BidEvent(
+                request.auctionId(), request.bidPrice(), userId,
+                bid.getBidedAt().toString(), bidder.getNickname()));
+        log.info("[BidService] 이벤트발행종료");
+
+        return new BidResponse(
+                request.auctionId(), request.bidPrice(),
+                userId, bid.getBidedAt(), bidder.getNickname());
+    }
 }

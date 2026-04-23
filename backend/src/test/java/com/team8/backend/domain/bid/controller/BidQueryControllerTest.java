@@ -151,8 +151,7 @@ class BidQueryControllerTest {
                 "seller",
                 LocalDateTime.now(),
                 LocalDateTime.now().plusHours(1),
-                isWinning ? 2L : 3L,
-                isWinning
+                isWinning ? 2L : 3L
         );
     }
 

@@ -31,7 +31,7 @@ services:
           cpus: "1.0"
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep -q 'UP'"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -72,4 +72,5 @@ services:
     # 기본값: load-test. 다른 시나리오 실행 시 command 오버라이드:
     # docker compose -f docker-compose.k6.yml run --rm k6 \
     #   run --out influxdb=http://influxdb:8086/k6 /scripts/stress-test.js
-    command: run --out influxdb=http://influxdb:8086/k6 /scripts/load-test.js
+    # command: run --out influxdb=http://influxdb:8086/k6 /scripts/load-test.js
+    command: run --out influxdb=http://influxdb:8086/k6 /scripts/bid-concurrency-test.js

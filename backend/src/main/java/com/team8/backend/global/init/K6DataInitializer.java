@@ -1,4 +1,4 @@
-package com.team8.backend.global.config;
+package com.team8.backend.global.init;
 
 import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.entity.AuctionStatus;

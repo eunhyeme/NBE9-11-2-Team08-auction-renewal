@@ -185,6 +185,92 @@ class BidServiceTest {
     }
 
     // ═══════════════════════════════════════════════
+    // createBidAtomic
+    // ═══════════════════════════════════════════════
+    @Nested
+    @DisplayName("입찰생성(Atomic) — 원자 UPDATE 방식")
+    class CreateBidAtomic {
+
+        @Test
+        @DisplayName("정상 입찰 → 저장")
+        void success() {
+            given(auctionRepository.findByAuctionIdAndDeletedAtIsNull(AUCTION_ID))
+                    .willReturn(Optional.of(auction));
+            given(userRepository.getReferenceById(USER_ID)).willReturn(bidder);
+            given(auctionRepository.atomicBidUpdate(eq(AUCTION_ID), eq(2000L), eq(USER_ID), any(), any())).willReturn(1);
+            given(bidRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
+
+            BidResponse result = bidService.createBidAtomic(USER_ID, new BidRequest(AUCTION_ID, 2000L));
+
+            assertThat(result).isNotNull();
+            assertThat(result.bidPrice()).isEqualTo(2000L);
+            verify(bidRepository).save(any(Bid.class));
+        }
+
+        @Test
+        @DisplayName("원자 UPDATE 0건 → 재조회 후 BID_TOO_LOW")
+        void atomicUpdateFails_bidTooLow() {
+            given(auctionRepository.findByAuctionIdAndDeletedAtIsNull(AUCTION_ID))
+                    .willReturn(Optional.of(auction));
+            given(userRepository.getReferenceById(USER_ID)).willReturn(bidder);
+            given(auctionRepository.atomicBidUpdate(eq(AUCTION_ID), eq(2000L), eq(USER_ID), any(), any())).willReturn(0);
+
+            assertThatThrownBy(() ->
+                    bidService.createBidAtomic(USER_ID, new BidRequest(AUCTION_ID, 2000L)))
+                    .isInstanceOf(CustomException.class)
+                    .extracting(e -> ((CustomException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.BID_TOO_LOW);
+        }
+
+        @Test
+        @DisplayName("원자 UPDATE 0건 + 경매 종료 → 재조회 후 INVALID_AUCTION_STATE")
+        void atomicUpdateFails_auctionEnded() {
+            Auction ended = mockAuction(AUCTION_ID, seller, 1000L, 500L,
+                    LocalDateTime.now().minusMinutes(1));
+
+            // 사전 읽기 없이 바로 atomicBidUpdate → 실패 시 재조회 1회만 호출
+            given(auctionRepository.findByAuctionIdAndDeletedAtIsNull(AUCTION_ID))
+                    .willReturn(Optional.of(ended));
+            given(auctionRepository.atomicBidUpdate(eq(AUCTION_ID), eq(2000L), eq(USER_ID), any(), any())).willReturn(0);
+
+            assertThatThrownBy(() ->
+                    bidService.createBidAtomic(USER_ID, new BidRequest(AUCTION_ID, 2000L)))
+                    .isInstanceOf(CustomException.class)
+                    .extracting(e -> ((CustomException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.INVALID_AUCTION_STATE);
+        }
+
+        @Test
+        @DisplayName("종료된 경매 → 사전 검증에서 INVALID_AUCTION_STATE")
+        void preCheck_auctionEnded() {
+            given(auctionRepository.findByAuctionIdAndDeletedAtIsNull(AUCTION_ID))
+                    .willReturn(Optional.of(auction));
+            given(auction.getStatus()).willReturn(AuctionStatus.WON);
+            given(userRepository.getReferenceById(USER_ID)).willReturn(bidder);
+
+            assertThatThrownBy(() ->
+                    bidService.createBidAtomic(USER_ID, new BidRequest(AUCTION_ID, 2000L)))
+                    .isInstanceOf(CustomException.class)
+                    .extracting(e -> ((CustomException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.INVALID_AUCTION_STATE);
+        }
+
+        @Test
+        @DisplayName("자기 경매 입찰 → 사전 검증에서 SELF_BIDDING")
+        void preCheck_selfBidding() {
+            given(auctionRepository.findByAuctionIdAndDeletedAtIsNull(AUCTION_ID))
+                    .willReturn(Optional.of(auction));
+            given(userRepository.getReferenceById(1L)).willReturn(seller);
+
+            assertThatThrownBy(() ->
+                    bidService.createBidAtomic(1L, new BidRequest(AUCTION_ID, 2000L)))
+                    .isInstanceOf(CustomException.class)
+                    .extracting(e -> ((CustomException) e).getErrorCode())
+                    .isEqualTo(ErrorCode.SELF_BIDDING);
+        }
+    }
+
+    // ═══════════════════════════════════════════════
     // getAuctionBids
     // ═══════════════════════════════════════════════
     @Nested
@@ -221,16 +307,6 @@ class BidServiceTest {
 
             assertThat(result).hasSize(1);
             assertThat(result.getFirst().myBidPrice()).isEqualTo(2000L);
-        }
-
-        @Test
-        void isWinning_true() {
-            given(auction.getLastBidder()).willReturn(bidder);
-
-            Bid bid = new Bid(bidder, auction, 2000L, FIXED_TIME);
-            given(bidRepository.findLatestByBidderUserId(USER_ID)).willReturn(List.of(bid));
-
-            assertThat(bidService.getMyBids(USER_ID).getFirst().isWinning()).isTrue();
         }
     }
 

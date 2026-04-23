@@ -1,7 +1,7 @@
-# spring:
-#   jpa:
-#     hibernate:
-#       ddl-auto: update   # create는 첫 실행 시 존재하지 않는 FK를 DROP 시도해 MySQL 에러 발생
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update   # create는 첫 실행 시 존재하지 않는 FK를 DROP 시도해 MySQL 에러 발생
 #     defer-datasource-initialization: true
 #   sql:
 #     init:

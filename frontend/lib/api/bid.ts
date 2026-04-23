@@ -4,7 +4,7 @@ import type { BidResponse, MyBidResponse, PlaceBidRequest } from "@/types/bid";
 
 export async function placeBid(data: PlaceBidRequest): Promise<BidResponse> {
   const res = await apiFetch.post<ApiResponse<BidResponse>>(
-    "/api/auctions/bids",
+    "/api/auctions/bids/atomic",
     data,
   );
   return res.result;
