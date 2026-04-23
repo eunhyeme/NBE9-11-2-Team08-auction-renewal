@@ -27,6 +27,7 @@ public class OrderController {
     private final OrderFacade orderFacade;
 
     // [참여자] 주문 상세 조회 /api/orders/{orderId}
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/{orderId}")
     public ApiResponse<OrderResponse> getOrder(
             @PathVariable Long orderId,
@@ -35,6 +36,7 @@ public class OrderController {
     }
 
     // [구매자] 배송 정보 입력 /api/orders/{orderId}/shipping
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/{orderId}/shipping")
     public ApiResponse<Void> updateAddress(
             @PathVariable Long orderId,
@@ -45,6 +47,7 @@ public class OrderController {
     }
 
     // [구매자] 결제 /api/orders/{orderId}/pay
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/{orderId}/pay")
     public ApiResponse<Void> payOrder(
             @PathVariable Long orderId,
@@ -54,6 +57,7 @@ public class OrderController {
     }
 
     // [판매자] 송장 번호 등록 /api/orders/{orderId}/tracking
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/{orderId}/tracking")
     public ApiResponse<Void> registerTracking(
             @PathVariable Long orderId,

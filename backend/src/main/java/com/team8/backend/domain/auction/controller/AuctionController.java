@@ -89,6 +89,7 @@ public class AuctionController {
     /**
      * 경매 상품 등록
      */
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ApiResponse<?>> createAuction(
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -110,6 +111,7 @@ public class AuctionController {
      * 경매 철회 (Soft Delete)
      * DELETE /api/auctions/{auctionId}
      */
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @DeleteMapping("/{auctionId}")
     public ResponseEntity<ApiResponse<?>> deleteAuction(
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -126,6 +128,7 @@ public class AuctionController {
      * 경매 정보 수정
      * PATCH /api/auctions/{auctionId}
      */
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PatchMapping(value = "/{auctionId}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ApiResponse<?>> updateAuction(
             @AuthenticationPrincipal CustomUserDetails userDetails,

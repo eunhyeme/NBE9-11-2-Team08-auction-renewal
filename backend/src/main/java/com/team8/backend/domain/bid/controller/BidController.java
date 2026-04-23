@@ -5,6 +5,8 @@ import com.team8.backend.domain.bid.dto.BidResponse;
 import com.team8.backend.domain.bid.service.BidService;
 import com.team8.backend.global.response.ApiResponse;
 import com.team8.backend.global.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,6 +22,7 @@ public class BidController {
     private final BidService bidService;
 
     //입찰 신청 api
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/bids")
     public ResponseEntity<ApiResponse<BidResponse>> createBid(
             @RequestBody BidRequest request,

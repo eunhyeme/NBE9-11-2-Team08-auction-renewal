@@ -146,6 +146,24 @@ public class DataInitializer implements ApplicationRunner {
                 .build();
         auctionRepository.save(auction5);
 
+        // 6. 입찰자 없이 진행 중인 경매
+        Auction auction6 = Auction.builder()
+                .seller(seller1)
+                .title("소니 WH-1000XM5 헤드폰")
+                .imageUrl("/images/img6.jpg")
+                .description("노이즈 캔슬링 최상급, 한 달 사용.")
+                .startPrice(200000L)
+                .currentPrice(200000L)
+                .lastBidder(null)
+                .bidUnit(5000)
+                .status(AuctionStatus.ONGOING)
+                .startedAt(LocalDateTime.of(2026, 4, 20, 10, 0))
+                .endedAt(LocalDateTime.of(2026, 4, 30, 10, 0))
+                .version(1L)
+                .deletedAt(null)
+                .build();
+        auctionRepository.save(auction6);
+
         // ── BIDS ───────────────────────────────────────────────
         bidRepository.save(new Bid(buyer1, auction1, 510000L, LocalDateTime.of(2026, 4, 10, 11, 0)));
         bidRepository.save(new Bid(buyer2, auction1, 600000L, LocalDateTime.of(2026, 4, 10, 12, 0)));
