@@ -12,5 +12,4 @@ public interface AuctionService {
     AuctionResponse getAuction(Long auctionId);
     List<AuctionResponse> getMyAuctions(Long userId);
     AuctionResponse getMyAuction(Long userId, Long auctionId);
-    void closeAuction(Long auctionId);
 }

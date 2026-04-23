@@ -2,8 +2,8 @@ package com.team8.backend.domain.auction.scheduler;
 
 import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.entity.AuctionStatus;
+import com.team8.backend.domain.auction.facade.AuctionFacade;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
-import com.team8.backend.domain.auction.service.AuctionService;
 import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +28,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 class AuctionSchedulerConcurrencyTest {
 
     @Autowired
-    private AuctionService auctionService;
+    private AuctionFacade auctionFacade;
     @Autowired private AuctionRepository auctionRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private PlatformTransactionManager tm;
@@ -60,7 +60,7 @@ class AuctionSchedulerConcurrencyTest {
 
         // 스레드 1: 스케줄러 마감 시도
         executorService.submit(() -> {
-            try { auctionService.closeAuction(auctionId); } catch (Exception ignored) {}
+            try { auctionFacade.closeAuction(auctionId); } catch (Exception ignored) {}
             finally { latch.countDown(); }
         });
 

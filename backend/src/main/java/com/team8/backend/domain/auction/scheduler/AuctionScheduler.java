@@ -2,6 +2,7 @@ package com.team8.backend.domain.auction.scheduler;
 
 import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.entity.AuctionStatus;
+import com.team8.backend.domain.auction.facade.AuctionFacade;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
 import com.team8.backend.domain.auction.service.AuctionService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class AuctionScheduler {
 
     private final AuctionRepository auctionRepository;
     private final AuctionService auctionService;
+    private final AuctionFacade auctionFacade;
 
     // 매 초마다 실행
     @Scheduled(fixedDelay = 1000)
@@ -59,7 +61,7 @@ public class AuctionScheduler {
         int maxRetries = 3;
         for (int i = 0; i < maxRetries; i++) {
             try {
-                auctionService.closeAuction(auction.getAuctionId());
+                auctionFacade.closeAuction(auction.getAuctionId());
                 break; // 성공 시 루프 탈출
             } catch (OptimisticLockingFailureException e) {
                 log.warn("낙관적 락 충돌 (재시도 {}/{}): {}", i + 1, maxRetries, auction.getAuctionId());

@@ -5,9 +5,13 @@ import com.team8.backend.domain.auction.dto.request.AuctionCreateRequest;
 import com.team8.backend.domain.auction.dto.request.AuctionUpdateRequest;
 import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.entity.Auction;
+import com.team8.backend.domain.auction.entity.AuctionStatus;
+import com.team8.backend.domain.auction.event.AuctionEvent;
 import com.team8.backend.domain.auction.event.ImageUploadEvent;
+import com.team8.backend.domain.auction.repository.AuctionRepository;
 import com.team8.backend.domain.auction.service.AuctionDomainService;
 import com.team8.backend.domain.auction.service.ImageService;
+import com.team8.backend.domain.order.service.OrderService;
 import com.team8.backend.domain.user.entity.User;
 import com.team8.backend.domain.user.repository.UserRepository;
 import com.team8.backend.global.exception.CustomException;
@@ -16,7 +20,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -26,6 +33,8 @@ public class AuctionFacadeImpl implements AuctionFacade {
     private final ImageService imageService;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final AuctionRepository auctionRepository;
+    private final OrderService orderService;
 
     @Override
     @Transactional
@@ -120,5 +129,30 @@ public class AuctionFacadeImpl implements AuctionFacade {
 
         auction.update(updatedRequest);
         imageService.delete(oldImageUrl);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void closeAuction(Long auctionId) {
+        Auction auction = auctionRepository.findByAuctionIdAndDeletedAtIsNull(auctionId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
+
+        if (auction.getStatus() != AuctionStatus.ONGOING) {
+            return;
+        }
+
+        auction.close();
+
+        if (auction.getStatus() == AuctionStatus.WON) {
+            orderService.createOrder(auction, auction.getLastBidder(), auction.getCurrentPrice());
+        }
+
+        // 성공시 웹소켓 연결 끊는 이벤트 발행 (트랜잭션 성공 시에만)
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                eventPublisher.publishEvent(new AuctionEvent(auction.getAuctionId()));
+            }
+        });
     }
 }

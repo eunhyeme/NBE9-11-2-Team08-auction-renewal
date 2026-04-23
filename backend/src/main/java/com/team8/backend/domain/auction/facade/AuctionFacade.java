@@ -9,4 +9,5 @@ public interface AuctionFacade {
     AuctionResponse createAuction(Long userId, AuctionCreateRequest dto, ImageFile image);
     void deleteAuction(Long userId, Long auctionId);
     void updateAuction(Long userId, Long auctionId, AuctionUpdateRequest request, ImageFile image);
+    void closeAuction(Long auctionId);
 }

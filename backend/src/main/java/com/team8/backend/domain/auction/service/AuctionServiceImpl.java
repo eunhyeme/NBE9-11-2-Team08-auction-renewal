@@ -3,7 +3,6 @@ package com.team8.backend.domain.auction.service;
 import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.entity.AuctionStatus;
-import com.team8.backend.domain.auction.event.AuctionEvent;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
 import com.team8.backend.domain.auction.repository.AuctionSpecification;
 import com.team8.backend.domain.order.service.OrderService;
@@ -15,10 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 
@@ -77,30 +73,5 @@ public class AuctionServiceImpl implements AuctionService {
         Auction auction = auctionRepository.findByAuctionIdAndSeller_UserIdAndDeletedAtIsNull(auctionId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
         return AuctionResponse.from(auction);
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void closeAuction(Long auctionId) {
-        Auction auction = auctionRepository.findByAuctionIdAndDeletedAtIsNull(auctionId)
-                .orElseThrow(() -> new CustomException(ErrorCode.AUCTION_NOT_FOUND));
-
-        if (auction.getStatus() != AuctionStatus.ONGOING) {
-            return;
-        }
-
-        auction.close();
-
-        if (auction.getStatus() == AuctionStatus.WON) {
-            orderService.createOrder(auction, auction.getLastBidder(), auction.getCurrentPrice());
-        }
-
-        // 성공시 웹소켓 연결 끊는 이벤트 발행 (트랜잭션 성공 시에만)
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                eventPublisher.publishEvent(new AuctionEvent(auction.getAuctionId()));
-            }
-        });
     }
 }

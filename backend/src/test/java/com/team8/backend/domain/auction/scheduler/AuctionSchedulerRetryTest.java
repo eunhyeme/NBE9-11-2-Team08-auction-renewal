@@ -1,8 +1,8 @@
 package com.team8.backend.domain.auction.scheduler;
 
 import com.team8.backend.domain.auction.entity.Auction;
+import com.team8.backend.domain.auction.facade.AuctionFacade;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
-import com.team8.backend.domain.auction.service.AuctionService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +25,7 @@ class AuctionSchedulerRetryTest {
     private AuctionScheduler auctionScheduler;
     @Mock
     private AuctionRepository auctionRepository;
-    @Mock private AuctionService auctionService;
+    @Mock private AuctionFacade auctionFacade;
 
     @Test
     @DisplayName("낙관적 락 충돌 시 스케줄러는 최대 3번까지 서비스 호출을 재시도한다")
@@ -45,13 +45,13 @@ class AuctionSchedulerRetryTest {
         doThrow(new OptimisticLockingFailureException("충돌"))
                 .doThrow(new OptimisticLockingFailureException("충돌"))
                 .doNothing()
-                .when(auctionService).closeAuction(1L);
+                .when(auctionFacade).closeAuction(1L);
 
         // When
         auctionScheduler.processExpiredAuctions();
 
         // Then: 락 충돌 시 재시도가 일어나 총 3번 호출되었는지 확인
         
-        verify(auctionService, times(3)).closeAuction(1L);
+        verify(auctionFacade, times(3)).closeAuction(1L);
     }
 }
