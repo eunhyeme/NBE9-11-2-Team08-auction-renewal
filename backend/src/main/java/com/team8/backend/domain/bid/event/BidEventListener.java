@@ -1,8 +1,8 @@
 package com.team8.backend.domain.bid.event;
 
+import com.team8.backend.global.websocket.WSEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 import org.slf4j.Logger;
@@ -14,7 +14,7 @@ public class BidEventListener {
 
     private static final Logger log = LoggerFactory.getLogger(BidEventListener.class);
 
-    private final SimpMessagingTemplate messagingTemplate;
+    private final WSEventPublisher WSEventPublisher;
 
     @EventListener
     public void handleBidEvent(BidEvent event) {
@@ -22,17 +22,9 @@ public class BidEventListener {
         // 1. 이벤트 들어왔는지 확인
         log.info("[BidEventListener] 이벤트 수신 : {} ",event.getBidedAt());
 
-        String destination = "/topic/auction/" + event.getAuctionId();
-
-        // 2. 어디로 보내는지 확인
-        log.info("[BidEventListener] 메시지 전송 시도 - destination: {}", destination);
-
         try {
-            messagingTemplate.convertAndSend(destination, event);
-
-            // 3. 전송 성공 로그
-            log.info("[BidEventListener] 메시지 전송 성공");
-
+            // 확인 후 발행
+            WSEventPublisher.publishEnd(event.getAuctionId(), event);
         } catch (Exception e) {
             // 4. 전송 실패 로그
             log.error("[BidEventListener] 메시지 전송 실패", e);

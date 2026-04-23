@@ -8,7 +8,7 @@ const client = new Client({
 client.onConnect = () => {
     console.log("연결 성공");
 
-    client.subscribe("/topic/auction/1", msg => {
+    client.subscribe("/topic/auction/5", msg => {
         console.log("받은 데이터:", msg.body);
     });
 

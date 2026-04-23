@@ -3,12 +3,14 @@ package com.team8.backend.domain.auction.service;
 import com.team8.backend.domain.auction.dto.response.AuctionResponse;
 import com.team8.backend.domain.auction.entity.Auction;
 import com.team8.backend.domain.auction.entity.AuctionStatus;
+import com.team8.backend.domain.auction.event.AuctionEvent;
 import com.team8.backend.domain.auction.repository.AuctionRepository;
 import com.team8.backend.domain.auction.repository.AuctionSpecification;
 import com.team8.backend.domain.order.service.OrderService;
 import com.team8.backend.global.exception.CustomException;
 import com.team8.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,6 +27,7 @@ public class AuctionServiceImpl implements AuctionService {
 
     private final AuctionRepository auctionRepository;
     private final OrderService orderService;
+    private final ApplicationEventPublisher eventPublisher; //event->listender 전용 퍼블리셔
 
     @Override
     public Page<AuctionResponse> getAuctions(
@@ -89,5 +92,9 @@ public class AuctionServiceImpl implements AuctionService {
         if (auction.getStatus() == AuctionStatus.WON) {
             orderService.createOrder(auction, auction.getLastBidder(), auction.getCurrentPrice());
         }
+
+        // 성공시 웹소켓 연결 끊는 이벤트 발행
+        AuctionEvent event = new AuctionEvent(auction.getAuctionId());
+        eventPublisher.publishEvent(event);
     }
 }

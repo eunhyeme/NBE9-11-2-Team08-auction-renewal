@@ -32,7 +32,7 @@ public class BidService {
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
 
-    private final ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher; //event->listender 전용 퍼블리셔
     private static final Logger log = LoggerFactory.getLogger(BidService.class);
 
     public List<MyBidResponse> getMyBids(Long userId) {

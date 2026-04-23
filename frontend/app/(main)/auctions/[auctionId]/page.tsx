@@ -75,18 +75,19 @@ export default function AuctionDetailPage({ params }: AuctionDetailPageProps) {
 
     // ✅ WS 실시간 반영
     useAuctionSocket({
-        auctionId: id, //현재보고있는 경매 id, 해당 경매채널에 구독
-        enabled:auction?.status==="ONGOING",
-        onMessage: (rawBid) => { //서버에서 데이터가 들어오면 실행
-            const bid = normalizeBid(rawBid); //데이터 정규화
+        auctionId: id,
+        enabled: auction?.status === "ONGOING",
 
-            setBids((prev) => { //이전상태를 기준으로 새로운 상태를 만드는 패턴
-                // 중복 방지
-                const exists = prev.some( //새로 들어온 값에 대한 unique check
+        onMessage: (rawBid) => {
+            const bid = normalizeBid(rawBid);
+
+            setBids((prev) => {
+                const exists = prev.some(
                     (b) =>
                         b.bidderId === bid.bidderId &&
                         b.bidedAt === bid.bidedAt
                 );
+
                 if (exists) return prev;
 
                 return [bid, ...prev];
@@ -94,8 +95,13 @@ export default function AuctionDetailPage({ params }: AuctionDetailPageProps) {
 
             setCurrentPrice(bid.bidPrice);
         },
-    });
 
+        onEnd: () => {
+            console.log("경매 종료 수신");
+
+            window.location.reload();
+        },
+    });
     // 내 입찰 필터링
     const myBids = bids.filter(
         (bid) => bid.bidderId === me?.userId
