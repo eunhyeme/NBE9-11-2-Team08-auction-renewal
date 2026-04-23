@@ -38,7 +38,7 @@ export function CountdownTimer({
         clearInterval(id);
       }
     };
-    const id = setInterval(tick, 60_000);
+    const id = setInterval(tick, 1_000);
     return () => clearInterval(id);
   }, [endedAt, mounted, onExpire]);
 

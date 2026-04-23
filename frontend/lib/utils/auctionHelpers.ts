@@ -13,8 +13,7 @@ export function formatTimeLeft(endedAt: string): string {
   if (duration.days) parts.push(`${duration.days}일`);
   if (duration.hours) parts.push(`${duration.hours}시간`);
   if (duration.minutes) parts.push(`${duration.minutes}분`);
-  if (!parts.length) parts.push("1분 미만");
-
+  parts.push(`${duration.seconds ?? 0}초`);
   return `${parts.join(" ")} 남음`;
 }
 
