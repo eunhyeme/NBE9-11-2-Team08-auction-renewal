@@ -26,7 +26,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -74,7 +75,7 @@ class BidServiceTest {
         void success() {
             BidRequest req = new BidRequest(AUCTION_ID, 2000L);
 
-            given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(auction));
+            given(auctionRepository.findByAuctionIdAndDeletedAtIsNull(AUCTION_ID)).willReturn(Optional.of(auction));
             given(userRepository.getReferenceById(USER_ID)).willReturn(bidder);
             given(bidRepository.save(any(Bid.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
@@ -97,7 +98,7 @@ class BidServiceTest {
         @Test
         @DisplayName("경매 없음 → 예외")
         void auctionNotFound() {
-            given(auctionRepository.findById(999L)).willReturn(Optional.empty());
+            given(auctionRepository.findByAuctionIdAndDeletedAtIsNull(999L)).willReturn(Optional.empty());
 
             assertThatThrownBy(() ->
                     bidService.createBid(USER_ID, new BidRequest(999L, 2000L)))
@@ -107,11 +108,13 @@ class BidServiceTest {
         }
 
         @Test
-        @DisplayName("삭제된 경매 입찰 -> AUCTION_NOT_FOUND 예외")
+        @DisplayName("취소된 경매 입찰 -> INVALID_AUCTION_STATE 예외") // 이름 수정
         void bidToWithDrawAuction() {
-            given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(auction));
+            given(auctionRepository.findByAuctionIdAndDeletedAtIsNull(AUCTION_ID)).willReturn(Optional.of(auction));
             given(auction.getStatus()).willReturn(AuctionStatus.CANCELED);
-            given(auction.getDeletedAt()).willReturn(LocalDateTime.now());
+
+            // 이 줄은 제거해도 무방하지만 남겨두셔도 됩니다.
+            // given(auction.getDeletedAt()).willReturn(LocalDateTime.now());
 
             assertThatThrownBy(() ->
                     bidService.createBid(USER_ID,
@@ -119,7 +122,8 @@ class BidServiceTest {
             )
                     .isInstanceOf(CustomException.class)
                     .extracting(e -> ((CustomException) e).getErrorCode())
-                    .isEqualTo(ErrorCode.AUCTION_NOT_FOUND);
+                    // 수정: AUCTION_NOT_FOUND -> INVALID_AUCTION_STATE
+                    .isEqualTo(ErrorCode.INVALID_AUCTION_STATE);
         }
 
         @Test
@@ -159,7 +163,7 @@ class BidServiceTest {
         @Test
         @DisplayName("자기 경매 입찰 → 예외")
         void selfBidding() {
-            given(auctionRepository.findById(AUCTION_ID)).willReturn(Optional.of(auction));
+            given(auctionRepository.findByAuctionIdAndDeletedAtIsNull(AUCTION_ID)).willReturn(Optional.of(auction));
             given(userRepository.getReferenceById(1L)).willReturn(seller);
 
             assertThatThrownBy(() ->
@@ -174,7 +178,7 @@ class BidServiceTest {
         void extendTime() {
             Auction nearEnd = mockAuction(12L, seller, 1000L, 500L, LocalDateTime.now().plusMinutes(3));
 
-            given(auctionRepository.findById(12L)).willReturn(Optional.of(nearEnd));
+            given(auctionRepository.findByAuctionIdAndDeletedAtIsNull(12L)).willReturn(Optional.of(nearEnd));
             given(userRepository.getReferenceById(USER_ID)).willReturn(bidder);
             given(bidRepository.save(any())).willAnswer(inv -> inv.getArgument(0));
 
