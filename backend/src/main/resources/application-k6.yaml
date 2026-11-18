@@ -12,3 +12,7 @@ spring:
 #   level:
 #     root: WARN
 #     com.team8: INFO
+
+# 부하 테스트는 의도적으로 한도를 넘기므로 기본 비활성화 (제한 효과 측정 시 RATE_LIMIT_ENABLED=true)
+rate-limit:
+  enabled: ${RATE_LIMIT_ENABLED:false}
