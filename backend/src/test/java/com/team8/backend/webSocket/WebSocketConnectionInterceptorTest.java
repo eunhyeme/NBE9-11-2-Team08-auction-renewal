@@ -1,5 +1,6 @@
 package com.team8.backend.webSocket;
 
+import com.team8.backend.global.util.ClientIpResolver;
 import com.team8.backend.global.websocket.WebSocketConnectionInterceptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,8 +13,15 @@ import org.springframework.web.socket.WebSocketHandler;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -29,7 +37,7 @@ class WebSocketConnectionInterceptorTest {
 
     @BeforeEach
     void setUp() {
-        interceptor = new WebSocketConnectionInterceptor();
+        interceptor = new WebSocketConnectionInterceptor(new ClientIpResolver(false));
         // @Value 필드 직접 주입 (스프링 컨텍스트 없이)
         ReflectionTestUtils.setField(interceptor, "maxConnections", 3);
 
@@ -108,6 +116,74 @@ class WebSocketConnectionInterceptorTest {
 
             assertThat(interceptor.getConnectionCount().get("1.1.1.1").get()).isEqualTo(2);
             assertThat(interceptor.getConnectionCount().get("2.2.2.2").get()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("같은 IP 동시 핸드셰이크 100건 → 정확히 maxConnections 개만 허용")
+        void concurrentHandshakes_neverExceedLimit() throws Exception {
+            givenRemoteAddress("3.3.3.3");
+            int threads = 100;
+            ExecutorService executor = Executors.newFixedThreadPool(32);
+            CountDownLatch start = new CountDownLatch(1);
+            AtomicInteger accepted = new AtomicInteger();
+            List<Future<?>> futures = new ArrayList<>();
+
+            for (int i = 0; i < threads; i++) {
+                futures.add(executor.submit(() -> {
+                    start.await();
+                    if (interceptor.beforeHandshake(request, response, wsHandler, new HashMap<>())) {
+                        accepted.incrementAndGet();
+                    }
+                    return null;
+                }));
+            }
+            start.countDown();
+            for (Future<?> f : futures) {
+                f.get();
+            }
+            executor.shutdown();
+
+            assertThat(accepted.get()).isEqualTo(3);
+            assertThat(interceptor.getConnectionCount().get("3.3.3.3").get()).isEqualTo(3);
+        }
+
+        @Test
+        @DisplayName("거절된 첫 연결은 카운터를 남기지 않음 (maxConnections = 0)")
+        void rejectedFirstConnection_leavesNoEntry() throws Exception {
+            ReflectionTestUtils.setField(interceptor, "maxConnections", 0);
+            givenRemoteAddress("4.4.4.4");
+
+            boolean result = interceptor.beforeHandshake(request, response, wsHandler, attributes);
+
+            assertThat(result).isFalse();
+            assertThat(interceptor.getConnectionCount()).doesNotContainKey("4.4.4.4");
+        }
+    }
+
+    @Nested
+    @DisplayName("afterHandshake")
+    class AfterHandshake {
+
+        @Test
+        @DisplayName("핸드셰이크 실패(exception) → 증가했던 카운터 반납")
+        void failedHandshake_releasesCounter() throws Exception {
+            givenRemoteAddress("5.5.5.5");
+            interceptor.beforeHandshake(request, response, wsHandler, attributes);
+
+            interceptor.afterHandshake(request, response, wsHandler, new IllegalStateException("fail"));
+
+            assertThat(interceptor.getConnectionCount()).doesNotContainKey("5.5.5.5");
+        }
+
+        @Test
+        @DisplayName("핸드셰이크 성공 → 카운터 유지")
+        void successfulHandshake_keepsCounter() throws Exception {
+            givenRemoteAddress("6.6.6.6");
+            interceptor.beforeHandshake(request, response, wsHandler, attributes);
+
+            interceptor.afterHandshake(request, response, wsHandler, null);
+
+            assertThat(interceptor.getConnectionCount().get("6.6.6.6").get()).isEqualTo(1);
         }
     }
 

@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 @Slf4j
@@ -31,28 +30,21 @@ public class WebSocketDisconnectListener {
             return;
         }
 
-        String ip = (String) sessionAttributes.get("ip");
+        // SessionDisconnectEvent 는 한 세션에 대해 여러 번 발행될 수 있다 (Spring 문서 명시).
+        // 세션 속성에서 ip 를 꺼내면서 지워, 같은 세션의 중복 이벤트가 카운터를 두 번 줄이지 않게 한다.
+        String ip = (String) sessionAttributes.remove(WebSocketConnectionInterceptor.IP_ATTRIBUTE);
 
         if (ip == null) {
             return;
         }
 
-        Map<String, AtomicInteger> connectionCount = interceptor.getConnectionCount();
+        int remaining = interceptor.release(ip);
 
-        AtomicInteger count = connectionCount.get(ip);
-
-        if (count == null) {
+        if (remaining < 0) {
             log.warn("[WS-Disconnect] no counter found for ip: {}", ip);
             return;
         }
 
-        int updated = count.decrementAndGet();
-
-        log.info("[WS-Disconnect] disconnected ip: {}, remaining: {}", ip, updated);
-
-        // 🔥 0이면 제거 (메모리 정리)
-        if (updated <= 0) {
-            connectionCount.remove(ip);
-        }
+        log.info("[WS-Disconnect] disconnected ip: {}, remaining: {}", ip, remaining);
     }
 }
