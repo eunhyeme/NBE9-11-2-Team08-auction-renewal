@@ -89,6 +89,14 @@ class BidServiceTest {
             verify(bidRepository).save(bidCaptor.capture());
             assertThat(bidCaptor.getValue().getBidPrice()).isEqualTo(2000L);
 
+            // 응답은 방금 저장한 입찰 기준 (입찰자 가입일·이전 입찰자가 아님)
+            Bid saved = bidCaptor.getValue();
+            assertThat(result.bidPrice()).isEqualTo(2000L);
+            assertThat(result.bidderId()).isEqualTo(USER_ID);
+            assertThat(result.nickname()).isEqualTo("bidder");
+            assertThat(result.bidedAt()).isEqualTo(saved.getBidedAt());
+            assertThat(result.bidedAt()).isNotEqualTo(bidder.getCreatedAt());
+
             // @SpringBootTest에서 ApplicationEventPublisher는 스프링 내부 빈이 사용되므로
             // @MockitoBean으로 교체되지 않습니다.
             // 이벤트 발행 검증은 BidEventListenerSpringTest에서 수행합니다.

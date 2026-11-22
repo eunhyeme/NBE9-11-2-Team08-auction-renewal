@@ -100,10 +100,10 @@ public class BidService {
 
         return new BidResponse(
                 auction.getAuctionId(),
-                auction.getCurrentPrice(),
-                auction.getLastBidder().getUserId(),
-                auction.getLastBidder().getCreatedAt(),
-                auction.getLastBidder().getNickname()
+                bid.getBidPrice(),
+                bidder.getUserId(),
+                bid.getBidedAt(),
+                bidder.getNickname()
         );
     }
 
