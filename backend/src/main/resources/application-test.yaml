@@ -15,3 +15,7 @@ logging:
 
 file:
   upload-dir: test-uploads # 테스트용 폴더 분리
+
+# 통합 테스트가 같은 IP/사용자로 반복 호출하므로 처리율 제한 비활성화
+rate-limit:
+  enabled: false

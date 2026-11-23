@@ -1,5 +1,6 @@
 package com.team8.backend.webSocket;
 
+import com.team8.backend.global.util.ClientIpResolver;
 import com.team8.backend.global.websocket.WebSocketConnectionInterceptor;
 import com.team8.backend.global.websocket.WebSocketDisconnectListener;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +29,7 @@ class WebSocketDisconnectListenerTest {
 
     @BeforeEach
     void setUp() {
-        interceptor = new WebSocketConnectionInterceptor();
+        interceptor = new WebSocketConnectionInterceptor(new ClientIpResolver(false));
         ReflectionTestUtils.setField(interceptor, "maxConnections", 3);
         disconnectListener = new WebSocketDisconnectListener(interceptor);
     }
@@ -55,6 +56,19 @@ class WebSocketDisconnectListenerTest {
         disconnectListener.handleDisconnect(event);
 
         assertThat(interceptor.getConnectionCount()).doesNotContainKey(ip);
+    }
+
+    @Test
+    @DisplayName("같은 세션의 중복 disconnect 이벤트 → 카운터는 한 번만 감소")
+    void handleDisconnect_duplicateEvent_decreasesOnce() {
+        String ip = "172.16.0.1";
+        interceptor.getConnectionCount().put(ip, new AtomicInteger(3));
+
+        SessionDisconnectEvent event = buildDisconnectEvent(ip);
+        disconnectListener.handleDisconnect(event);
+        disconnectListener.handleDisconnect(event);
+
+        assertThat(interceptor.getConnectionCount().get(ip).get()).isEqualTo(2);
     }
 
     @Test

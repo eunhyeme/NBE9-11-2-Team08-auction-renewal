@@ -11,6 +11,59 @@ spring:
 websocket:
   max-connections-per-ip: 3
 
+client-ip:
+  # Nginx/로드밸런서 뒤에 배포할 때만 true (직접 노출 시 X-Forwarded-For 위조로 제한 우회 가능)
+  trust-forwarded-for: ${TRUST_FORWARDED_FOR:false}
+
+# 토큰 버킷 처리율 제한. 위에서부터 처음 매칭되는 정책 하나만 적용
+# capacity = 순간 허용량, refill-tokens / refill-period = 지속 허용 속도
+rate-limit:
+  enabled: ${RATE_LIMIT_ENABLED:true}
+  cache-expire-after-access: 10m
+  policies:
+    - name: login            # 무차별 대입 방지
+      method: POST
+      pattern: /api/users/login
+      key: IP
+      capacity: 5
+      refill-tokens: 5
+      refill-period: 1m
+    - name: signup           # 계정 대량 생성 방지
+      method: POST
+      pattern: /api/users/signup
+      key: IP
+      capacity: 10
+      refill-tokens: 10
+      refill-period: 1h
+    - name: bid              # 입찰 매크로 방지 (마감 직전 순간 집중은 허용)
+      method: POST
+      pattern: /api/auctions/bids/**
+      key: USER
+      capacity: 5
+      refill-tokens: 2
+      refill-period: 1s
+    - name: auction-create   # 이미지 업로드 부하 방지
+      method: POST
+      pattern: /api/auctions
+      key: USER
+      capacity: 5
+      refill-tokens: 5
+      refill-period: 1m
+    - name: order-pay        # 결제 중복 요청 방지
+      method: POST
+      pattern: /api/orders/*/pay
+      key: USER
+      capacity: 10
+      refill-tokens: 10
+      refill-period: 1m
+    - name: read             # 조회 크롤링 방어 (느슨하게)
+      method: GET
+      pattern: /api/**
+      key: IP
+      capacity: 40
+      refill-tokens: 20
+      refill-period: 1s
+
 custom:
   jwt:
     expireSeconds: ${JWT_EXPRIRE_SECONDS:1800}
